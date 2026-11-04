@@ -66,6 +66,8 @@ h2{font:800 11px var(--body);text-transform:uppercase;letter-spacing:1.4px;color
 .stpil.tb{background:color-mix(in srgb,var(--warn) 18%,transparent);color:var(--warn)}
 .stpil.ak{background:color-mix(in srgb,var(--ok) 16%,transparent);color:var(--ok)}
 .tegel .v.online:empty{display:none}
+.tegelactie{align-self:flex-start;margin-top:4px;font:700 11px var(--body);color:var(--acc-deep);border:1px solid var(--hair2);border-radius:7px;padding:3px 8px}
+.tegelactie:hover{border-color:var(--acc);background:var(--paper-dim)}
 .tegel .v .nu{color:var(--ok);font-weight:700}
 .badge{font:800 9.5px var(--body);text-transform:uppercase;letter-spacing:.7px;padding:2px 7px;border-radius:99px;background:var(--paper-dim);color:var(--ink-soft);align-self:flex-start}
 /* ---------- beheer ---------- */
@@ -209,6 +211,7 @@ async function laadMenu(){
   KEUZETEL = {}; for (const r of d.data || []){ const k = KEUZETEL[r.klant_code] || (KEUZETEL[r.klant_code] = {n: 0, op: null, tb: 0, ak: 0});
     if (r.status === 'ter_beoordeling') k.tb++; if (r.status === 'akkoord') k.ak++;
     if (!(r.inst && Object.keys(r.inst).length) && !r.voorstel && !r.toelichting) continue; k.n++; if (!k.op || r.op > k.op) k.op = r.op; }
+  if (!GEKOZEN && TOOLS.length === 1) GEKOZEN = TOOLS[0].code;   /* één tool: klanten meteen tonen */
   renderTools();
   if (GEKOZEN) renderKlanten(GEKOZEN);
   $('beheerblok').classList.toggle('verborgen', !IK.admin);
@@ -230,10 +233,11 @@ function renderKlanten(code){
       <span class="o">${d ? 'Data ' + esc(d.snapshot) + (d.meta && d.meta.vhe ? ' · ' + nl(d.meta.vhe) + ' eenheden' : '') : '<i>nog geen data gepubliceerd</i>'}</span>
       <span class="v">${d ? `<span>gepubliceerd ${esc(tijd(d.op))}</span>` : ''}${kz && kz.n ? `<span>${kz.n} aanpassing${kz.n === 1 ? '' : 'en'} · laatst ${esc(tijd(kz.op))}</span>` : ''}</span>
       ${kz && (kz.tb || kz.ak) ? `<span class="v">${kz.tb ? `<span class="stpil tb">${kz.tb} ter beoordeling</span>` : ''}${kz.ak ? `<span class="stpil ak">${kz.ak} akkoord</span>` : ''}</span>` : ''}
-      <span class="v online" id="online-${esc(k.code)}"></span></button>`; }).join('')
+      <span class="v online" id="online-${esc(k.code)}"></span>
+      ${IK.admin && d ? `<span class="tegelactie" data-dataklant="${esc(k.code)}" title="tool openen in Data &amp; import om nieuwe data in te lezen en te publiceren">⇪ data bijwerken</span>` : ''}</button>`; }).join('')
     + (IK.admin ? '<button class="tegel nieuw" id="nieuweklant">+ Nieuwe klant</button>' : '')
     + (!lijst.length && !IK.admin ? '<p class="klein">Nog geen klanten met data voor deze tool.</p>' : '');
-  $('klanten').querySelectorAll('[data-klant]').forEach(b => b.onclick = () => openTool(tool, b.dataset.klant));
+  $('klanten').querySelectorAll('[data-klant]').forEach(b => b.onclick = e => openTool(tool, b.dataset.klant, e.target.closest('[data-dataklant]') ? 'data' : null));
   if ($('nieuweklant')) $('nieuweklant').onclick = async () => {
     const naam = prompt('Naam van de klant (bv. Wonen Zuid):'); if (!naam) return;
     const voorstel = naam.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
@@ -274,7 +278,7 @@ async function haal(bucket, pad, tekst, stempel = ''){
   const w = tekst ? await data.text() : new Uint8Array(await data.arrayBuffer());
   cache('put', sl, w); return w;
 }
-async function openTool(tool, klantCode){
+async function openTool(tool, klantCode, startView = null){
   const klant = KLANTEN.find(k => k.code === klantCode); if (!klant){ toon('menu'); return; }
   toon('laden'); $('ladentekst').textContent = `${tool.naam} · ${klant.naam} wordt geladen…`; stopOnline();
   try{
@@ -286,7 +290,7 @@ async function openTool(tool, klantCode){
     const app = (lijst || []).find(f => f.name === tool.app_pad.split('/').pop());
     if (!app) throw new Error('De toolcode staat nog niet klaar.');
     const html = await haal('apps', tool.app_pad, true, app.updated_at || app.created_at || '');
-    window.__TT = {sb, klant: klantCode, klantNaam: klant.naam, datasetId: leeg ? null : ds.id, gz, email: IK.email, admin: IK.admin, team: TEAM, leeg};
+    window.__TT = {sb, klant: klantCode, klantNaam: klant.naam, datasetId: leeg ? null : ds.id, gz, email: IK.email, admin: IK.admin, team: TEAM, leeg, startView};
     location.hash = encodeURIComponent(tool.code) + '/' + encodeURIComponent(klantCode);
     const w = $('toolwrap'); w.innerHTML = ''; const f = document.createElement('iframe'); f.title = tool.naam; const u = URL.createObjectURL(new Blob([html], {type: 'text/html'})); f.src = u; f.onload = () => setTimeout(() => URL.revokeObjectURL(u), 5000); w.appendChild(f);
     toon('toolwrap'); document.title = `${klant.naam} · ${tool.naam}`;

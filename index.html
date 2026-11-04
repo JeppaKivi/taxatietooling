@@ -104,6 +104,12 @@ h2{font:800 11px var(--body);text-transform:uppercase;letter-spacing:1.4px;color
 .stpil.tb{background:color-mix(in srgb,var(--warn) 18%,transparent);color:var(--warn)}
 .stpil.ak{background:color-mix(in srgb,var(--ok) 16%,transparent);color:var(--ok)}
 .tegel .v.online:empty{display:none}
+.nieuwlink{color:var(--acc-deep);font-weight:700;text-decoration:underline dotted;text-underline-offset:3px}
+#nieuwvenster{position:fixed;inset:0;z-index:40;background:rgba(10,16,24,.45);display:flex;align-items:flex-start;justify-content:center;padding:70px 16px}
+.nvkaart{background:var(--card);border:1px solid var(--hairline);border-radius:14px;max-width:620px;width:100%;max-height:calc(100vh - 140px);overflow:auto;padding:18px 20px;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.nvkop{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:6px}
+.nvv{font:800 10px var(--body);text-transform:uppercase;letter-spacing:.8px;color:var(--ink-soft);margin-top:14px}
+.nvkaart ul{margin:6px 0 0;padding-left:20px;line-height:1.55;font-size:13px}
 .tegelactie{align-self:flex-start;margin-top:4px;font:700 11px var(--body);color:var(--acc-deep);border:1px solid var(--hair2);border-radius:7px;padding:3px 8px}
 .tegelactie:hover{border-color:var(--acc);background:var(--paper-dim)}
 .tegel .v .nu{color:var(--ok);font-weight:700}
@@ -265,9 +271,10 @@ async function laadMenu(){
 }
 function renderTools(){
   $('tools').innerHTML = TOOLS.map(t => { const n = new Set(DATASETS.filter(d => d.tool_code === t.code).map(d => d.klant_code)).size;
-    return `<button class="tegel${GEKOZEN === t.code ? ' aan' : ''}" data-tool="${esc(t.code)}"><span class="t">${esc(t.naam)}</span><span class="o">${esc(t.omschrijving || '')}</span><span class="v"><span>${n} klant${n === 1 ? '' : 'en'}</span></span></button>`; }).join('')
+    return `<button class="tegel${GEKOZEN === t.code ? ' aan' : ''}" data-tool="${esc(t.code)}"><span class="t">${esc(t.naam)}</span><span class="o">${esc(t.omschrijving || '')}</span>
+      <span class="v"><span>${n} klant${n === 1 ? '' : 'en'}</span>${t.versie ? `<span>versie ${esc(t.versie)}</span>` : ''}${(t.wijzigingen || []).length ? `<span class="nieuwlink" data-nieuw="${esc(t.code)}">wat is er nieuw?</span>` : ''}</span></button>`; }).join('')
     + BINNENKORT.map(([n, o]) => `<div class="tegel binnenkort"><span class="badge">binnenkort</span><span class="t">${esc(n)}</span><span class="o">${esc(o)}</span></div>`).join('');
-  $('tools').querySelectorAll('[data-tool]').forEach(b => b.onclick = () => { GEKOZEN = GEKOZEN === b.dataset.tool ? null : b.dataset.tool; renderTools();
+  $('tools').querySelectorAll('[data-tool]').forEach(b => b.onclick = e => { if (e.target.closest('[data-nieuw]')) return toonNieuw(b.dataset.tool); GEKOZEN = GEKOZEN === b.dataset.tool ? null : b.dataset.tool; renderTools();
     if (GEKOZEN) renderKlanten(GEKOZEN); else { $('klantblok').classList.add('verborgen'); stopOnline(); } });
 }
 function renderKlanten(code){
@@ -294,6 +301,15 @@ function renderKlanten(code){
   };
   $('klantblok').scrollIntoView({behavior: 'smooth', block: 'nearest'}); pasIndelingToe();
   volgOnline(code, lijst.map(k => k.code));
+}
+
+/* ---------- wat is er nieuw per tool ---------- */
+function toonNieuw(code){
+  const t = TOOLS.find(x => x.code === code); if (!t) return; let d = $('nieuwvenster'); if (d) d.remove();
+  d = document.createElement('div'); d.id = 'nieuwvenster';
+  d.innerHTML = `<div class="nvkaart"><div class="nvkop"><b>${esc(t.naam)} · wat is er nieuw</b><button class="knop klein" id="nvsluit">Sluiten</button></div>` +
+    (t.wijzigingen || []).map(x => `<div class="nvv">versie ${esc(x.versie)} · ${esc(new Date(x.datum).toLocaleDateString('nl-NL', {day: 'numeric', month: 'long', year: 'numeric'}))}</div><ul>${(x.punten || []).map(p => `<li>${esc(p)}</li>`).join('')}</ul>`).join('') + '</div>';
+  document.body.appendChild(d); d.onclick = e => { if (e.target === d || e.target.id === 'nvsluit') d.remove(); };
 }
 
 /* ---------- profiel: beheerder kan het dashboard bekijken als een collega ---------- */
@@ -392,7 +408,7 @@ async function openTool(tool, klantCode, startView = null){
     if (!app) throw new Error('De toolcode staat nog niet klaar.');
     const html = await haal('apps', tool.app_pad, true, app.updated_at || app.created_at || '');
     window.__TT = {sb, klant: klantCode, klantNaam: klant.naam, datasetId: leeg ? null : ds.id, gz, email: IK.email, admin: EFF().admin, team: TEAM, leeg, startView,
-      thema: document.documentElement.dataset.theme || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'), alsNaam: ALS ? EFF().naam : null};
+      wijzigingen: tool.wijzigingen || [], thema: document.documentElement.dataset.theme || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'), alsNaam: ALS ? EFF().naam : null};
     location.hash = encodeURIComponent(tool.code) + '/' + encodeURIComponent(klantCode);
     const w = $('toolwrap'); w.innerHTML = ''; const f = document.createElement('iframe'); f.title = tool.naam; const u = URL.createObjectURL(new Blob([html], {type: 'text/html'})); f.src = u; f.onload = () => setTimeout(() => URL.revokeObjectURL(u), 5000); w.appendChild(f);
     toon('toolwrap'); document.title = `${klant.naam} · ${tool.naam}`;

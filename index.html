@@ -182,6 +182,12 @@ th{font:800 9.5px var(--body);text-transform:uppercase;letter-spacing:.8px;color
         <div style="margin-top:16px"><b>Back-up</b>
           <p class="klein" style="margin:4px 0 8px">Alle keuzes, instellingen, team en logboek als één bestand (gratis Supabase maakt zelf geen back-ups).</p>
           <button class="knop klein" id="backup">⤓ Download back-up</button><span id="b-msg" class="klein" style="margin-left:8px"></span></div></div><i class="rsz" title="sleep om de breedte aan te passen"></i></section>
+    <section class="blok beheer verborgen" data-blok="toolsbeheer"><header><span class="greep" title="sleep om te verplaatsen">⠿</span><h2>Tools beheren</h2></header>
+      <div class="paneel"><div class="tabelwrap"><table id="tooltabel"></table></div>
+        <div class="rij"><input id="nt-code" placeholder="code (bv. bollengrafiek)" list="nt-codes"><datalist id="nt-codes"></datalist><input id="nt-naam" placeholder="naam op de tegel"><input id="nt-oms" placeholder="korte omschrijving" style="flex:2 1 200px">
+          <label class="klein" style="display:flex;gap:5px;align-items:center"><input type="checkbox" id="nt-kl"> zonder klant</label><button class="knop klein prim" id="nt-toe">Tool aanmaken</button></div>
+        <p class="klein" style="margin:8px 0 0">Een nieuwe tool staat eerst <b>uit</b>: alleen jij ziet hem in deze lijst. Upload een versie (HTML-bestand uit de tool-chat) en zet hem daarna aan. "Zonder klant" = de tool opent direct, zonder klantkeuze.</p>
+        <div id="nt-msg"></div></div><i class="rsz" title="sleep om de breedte aan te passen"></i></section>
     <section class="blok beheer verborgen" data-blok="log"><header><span class="greep" title="sleep om te verplaatsen">⠿</span><h2>Logboek</h2><span class="klein">laatste 60 wijzigingen</span>
         <select id="logklant" style="margin-left:6px;padding:4px 8px;border:1px solid var(--hair2);border-radius:7px;background:var(--paper);color:var(--ink)"><option value="">alle klanten</option></select></header>
       <div class="paneel"><div class="tabelwrap"><table class="log" id="logtabel"></table></div></div><i class="rsz" title="sleep om de breedte aan te passen"></i></section>
@@ -200,7 +206,7 @@ const toon = (...ids) => { for (const id of ['laden', 'inlog', 'menu', 'toolwrap
 const tijd = op => { if (!op) return ''; const s = (Date.now() - new Date(op)) / 1000; return s < 60 ? 'zojuist' : s < 3600 ? Math.round(s / 60) + ' min geleden' : s < 86400 ? Math.round(s / 3600) + ' uur geleden' : new Date(op).toLocaleDateString('nl-NL', {day: 'numeric', month: 'short', year: 'numeric'}); };
 const nl = (v, d = 0) => v == null ? '–' : Number(v).toLocaleString('nl-NL', {minimumFractionDigits: d, maximumFractionDigits: d});
 const IK = {email: null, naam: null, admin: false};
-let ALS = null;   /* beheerder bekijkt het dashboard als een collega (rol en naam), wijzigingen blijven op naam van de beheerder */
+let ALS = null, KLANTEN_ALLE = [];   /* beheerder bekijkt het dashboard als een collega (rol en naam), wijzigingen blijven op naam van de beheerder */
 const EFF = () => ALS ? {naam: ALS.naam || ALS.email, admin: ALS.rol === 'admin', email: ALS.email} : IK;
 const LSH = {get(k, d){ try{ const v = localStorage.getItem('tt_hub_' + k); return v == null ? d : JSON.parse(v); }catch(e){ return d; } }, set(k, v){ try{ localStorage.setItem('tt_hub_' + k, JSON.stringify(v)); }catch(e){} }};
 /* ---------- licht / donker ---------- */
@@ -209,9 +215,9 @@ function zetThema(t){ if (t) document.documentElement.dataset.theme = t; else de
 zetThema(LSH.get('thema', null));
 $('thema').addEventListener('click', () => { const donker = document.documentElement.dataset.theme ? document.documentElement.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
   const t = donker ? 'light' : 'dark'; LSH.set('thema', t); zetThema(t); });
-let TEAM = [], TOOLS = [], KLANTEN = [], DATASETS = [], KEUZETEL = {}, GEKOZEN = null;
+let TEAM = [], TOOLS = [], ALLETOOLS = [], KLANTEN = [], DATASETS = [], KEUZETEL = {}, GEKOZEN = null;
 /* binnenkort: tools die nog op het platform komen (alleen ter oriëntatie) */
-const BINNENKORT = [['BOG · MOG · ZOG', 'Markthuren niet-wonen getoetst aan brainbay-referenties'], ['Controletool marktwaarde wonen', 'Taxatiecontrole en parameterlab'], ['Bollengrafiek', 'Beleggingsreferenties wonen'], ['Disconteringsvoet', 'Opbouw DE/UP per complex']];
+const BINNENKORT = [['bog_mog_zog', 'BOG · MOG · ZOG', 'Markthuren niet-wonen getoetst aan brainbay-referenties'], ['controle_marktwaarde', 'Controletool marktwaarde wonen', 'Taxatiecontrole en parameterlab'], ['bollengrafiek', 'Bollengrafiek', 'Beleggingsreferenties wonen'], ['disconteringsvoet', 'Disconteringsvoet', 'Opbouw DE/UP per complex']];
 
 /* ---------- opstarten ---------- */
 (async function start(){
@@ -255,26 +261,30 @@ async function naInloggen(){
 
 /* ---------- hoofdmenu ---------- */
 async function laadMenu(){
-  const [a, b, c, d] = await Promise.all([
-    sb.from('tools').select('*').eq('actief', true).order('volgorde'),
+  const [a, b, c, d, e2] = await Promise.all([
+    sb.from('tools').select('*').order('volgorde'),
     sb.from('klanten').select('*').order('naam'),
     sb.from('datasets').select('id, klant_code, tool_code, snapshot, bestand, bytes, meta, door, op, status').eq('status', 'gepubliceerd').order('op', {ascending: false}),
-    sb.from('mt_keuzes').select('klant_code, op, inst, voorstel, toelichting, status')]);
-  TOOLS = a.data || []; KLANTEN = b.data || []; DATASETS = c.data || [];
-  KEUZETEL = {}; for (const r of d.data || []){ const k = KEUZETEL[r.klant_code] || (KEUZETEL[r.klant_code] = {n: 0, op: null, tb: 0, ak: 0});
-    if (r.status === 'ter_beoordeling') k.tb++; if (r.status === 'akkoord') k.ak++;
-    if (!(r.inst && Object.keys(r.inst).length) && !r.voorstel && !r.toelichting) continue; k.n++; if (!k.op || r.op > k.op) k.op = r.op; }
+    sb.from('mt_keuzes').select('klant_code, op, inst, voorstel, toelichting, status'),
+    sb.from('tool_keuzes').select('tool_code, klant_code, op, data, status')]);
+  ALLETOOLS = a.data || []; TOOLS = ALLETOOLS.filter(t => t.actief || (EFF().admin && t.versie));   /* een uitgezette tool met versie ziet alleen de beheerder (om te testen) */ KLANTEN = (b.data || []).filter(k => !(k.meta && k.meta.verborgen)); KLANTEN_ALLE = b.data || []; DATASETS = c.data || [];
+  KEUZETEL = {}; const tel = (tool, r, gevuld) => { const T = KEUZETEL[tool] || (KEUZETEL[tool] = {}), k = T[r.klant_code] || (T[r.klant_code] = {n: 0, op: null, tb: 0, ak: 0});
+    if (r.status === 'ter_beoordeling') k.tb++; if (r.status === 'akkoord') k.ak++; if (!gevuld) return; k.n++; if (!k.op || r.op > k.op) k.op = r.op; };
+  for (const r of d.data || []) tel('markthuur_wonen', r, (r.inst && Object.keys(r.inst).length) || r.voorstel || r.toelichting);
+  for (const r of e2.data || []) tel(r.tool_code, r, r.data && Object.keys(r.data).length);
   renderTools();
   if (GEKOZEN) renderKlanten(GEKOZEN); else { $('klantblok').classList.add('verborgen'); stopOnline(); }
   document.querySelectorAll('.blok.beheer').forEach(b => b.classList.toggle('verborgen', !EFF().admin));
   if (EFF().admin) renderBeheer();
 }
 function renderTools(){
-  $('tools').innerHTML = TOOLS.map(t => { const n = new Set(DATASETS.filter(d => d.tool_code === t.code).map(d => d.klant_code)).size;
-    return `<button class="tegel${GEKOZEN === t.code ? ' aan' : ''}" data-tool="${esc(t.code)}"><span class="t">${esc(t.naam)}</span><span class="o">${esc(t.omschrijving || '')}</span>
-      <span class="v"><span>${n} klant${n === 1 ? '' : 'en'}</span>${t.versie ? `<span>versie ${esc(t.versie)}</span>` : ''}</span></button>`; }).join('')
-    + BINNENKORT.map(([n, o]) => `<div class="tegel binnenkort"><span class="badge">binnenkort</span><span class="t">${esc(n)}</span><span class="o">${esc(o)}</span></div>`).join('');
-  $('tools').querySelectorAll('[data-tool]').forEach(b => b.onclick = e => { if (e.target.closest('[data-nieuw]')) return toonNieuw(b.dataset.tool); GEKOZEN = GEKOZEN === b.dataset.tool ? null : b.dataset.tool; renderTools();
+  $('tools').innerHTML = TOOLS.map(t => { const n = new Set(DATASETS.filter(d => d.tool_code === t.code && d.klant_code !== 'algemeen').map(d => d.klant_code)).size, kl = t.instellingen && t.instellingen.klantloos;
+    return `<button class="tegel${GEKOZEN === t.code ? ' aan' : ''}" data-tool="${esc(t.code)}">${t.actief ? '' : '<span class="badge" title="staat uit: alleen jij ziet deze tegel">uit · alleen jij</span>'}<span class="t">${esc(t.naam)}</span><span class="o">${esc(t.omschrijving || '')}</span>
+      <span class="v"><span>${kl ? 'algemeen · openen' : n + ' klant' + (n === 1 ? '' : 'en')}</span>${t.versie ? `<span>versie ${esc(t.versie)}</span>` : ''}</span></button>`; }).join('')
+    + BINNENKORT.filter(([c]) => !TOOLS.find(t => t.code === c)).map(([, n, o]) => `<div class="tegel binnenkort"><span class="badge">binnenkort</span><span class="t">${esc(n)}</span><span class="o">${esc(o)}</span></div>`).join('');
+  $('tools').querySelectorAll('[data-tool]').forEach(b => b.onclick = e => { const t = TOOLS.find(x => x.code === b.dataset.tool);
+    if (t && t.instellingen && t.instellingen.klantloos) return openTool(t, 'algemeen');   /* tool zonder klantdata: direct openen */
+    GEKOZEN = GEKOZEN === b.dataset.tool ? null : b.dataset.tool; renderTools();
     if (GEKOZEN) renderKlanten(GEKOZEN); else { $('klantblok').classList.add('verborgen'); stopOnline(); } });
 }
 function renderKlanten(code){
@@ -282,7 +292,7 @@ function renderKlanten(code){
   $('klantblok').classList.remove('verborgen'); $('klantkop').textContent = tool.naam + ' · kies een klant';
   const laatste = {}; for (const d of DATASETS) if (d.tool_code === code && !laatste[d.klant_code]) laatste[d.klant_code] = d;
   const ADM = EFF().admin, lijst = KLANTEN.filter(k => laatste[k.code] || ADM);
-  $('klanten').innerHTML = lijst.map(k => { const d = laatste[k.code], kz = KEUZETEL[k.code];
+  $('klanten').innerHTML = lijst.map(k => { const d = laatste[k.code], kz = (KEUZETEL[code] || {})[k.code];
     return `<button class="tegel" data-klant="${esc(k.code)}"><span class="t">${esc(k.naam)}</span>
       <span class="o">${d ? 'Data ' + esc(d.snapshot) + (d.meta && d.meta.vhe ? ' · ' + nl(d.meta.vhe) + ' eenheden' : '') : '<i>nog geen data gepubliceerd</i>'}</span>
       <span class="v">${d ? `<span>gepubliceerd ${esc(tijd(d.op))}</span>` : ''}${kz && kz.n ? `<span>${kz.n} aanpassing${kz.n === 1 ? '' : 'en'} · laatst ${esc(tijd(kz.op))}</span>` : ''}</span>
@@ -328,8 +338,8 @@ $('wie').addEventListener('click', e => { if (!IK.admin) return; e.stopPropagati
 document.addEventListener('click', e => { if (!e.target.closest('.profiel')) $('profielmenu').classList.remove('open'); });
 
 /* ---------- indeling: volgorde en breedte per blok, paginabreedte (per computer) ---------- */
-const LAY_STD = {volg: ['tools', 'klanten', 'team', 'code', 'log'], w: {tools: 100, klanten: 100, team: 60, code: 40, log: 100}, pagina: 1560};
-let LAY = Object.assign(JSON.parse(JSON.stringify(LAY_STD)), LSH.get('indeling', {}));
+const LAY_STD = {volg: ['tools', 'klanten', 'team', 'code', 'toolsbeheer', 'log'], w: {tools: 100, klanten: 100, team: 60, code: 40, toolsbeheer: 100, log: 100}, pagina: 1560};
+let LAY = Object.assign(JSON.parse(JSON.stringify(LAY_STD)), LSH.get('indeling', {})); LAY.w = Object.assign({}, LAY_STD.w, LAY.w || {});
 function pasIndelingToe(){
   const c = $('blokken'), bl = [...c.children], volg = LAY.volg.concat(bl.map(b => b.dataset.blok).filter(x => !LAY.volg.includes(x)));
   for (const id of volg){ const b = bl.find(x => x.dataset.blok === id); if (b) c.appendChild(b); }
@@ -396,23 +406,82 @@ async function haal(bucket, pad, tekst, stempel = ''){
   cache('put', sl, w); return w;
 }
 async function openTool(tool, klantCode, startView = null){
-  const klant = KLANTEN.find(k => k.code === klantCode); if (!klant){ toon('menu'); return; }
+  const klant = KLANTEN_ALLE.find(k => k.code === klantCode); if (!klant){ toon('menu'); return; }
   toon('laden'); $('ladentekst').textContent = `${tool.naam} · ${klant.naam} wordt geladen…`; stopOnline();
   try{
+    const zonderData = tool.instellingen && (tool.instellingen.klantloos || tool.instellingen.data === 'geen');
     let ds = DATASETS.find(d => d.tool_code === tool.code && d.klant_code === klantCode), leeg = false;
-    if (!ds){ if (!EFF().admin) throw new Error('Voor deze klant is nog geen data gepubliceerd.'); ds = DATASETS.find(d => d.tool_code === tool.code); leeg = true;
-      if (!ds) throw new Error('Er is nog geen basisdataset voor deze tool.'); }
-    const [{data: lijst}, gz] = await Promise.all([sb.storage.from('apps').list(tool.code), haal('data', ds.bestand, false)]);
+    if (!ds && !zonderData){ if (!EFF().admin) throw new Error('Voor deze klant is nog geen data gepubliceerd.');
+      ds = DATASETS.find(d => d.tool_code === tool.code) || null; leeg = true;
+      if (!ds && tool.code === 'markthuur_wonen') throw new Error('Er is nog geen basisdataset voor deze tool.'); }
+    const [{data: lijst}, bytes] = await Promise.all([sb.storage.from('apps').list(tool.code), ds ? haal('data', ds.bestand, false) : Promise.resolve(null)]);
+    const gz = ds && /\.json\.gz$/.test(ds.bestand) ? bytes : null;
     /* app-versie: altijd de nieuwste (cache op pad + tijdstempel van het bestand) */
     const app = (lijst || []).find(f => f.name === tool.app_pad.split('/').pop());
     if (!app) throw new Error('De toolcode staat nog niet klaar.');
     const html = await haal('apps', tool.app_pad, true, app.updated_at || app.created_at || '');
-    window.__TT = {sb, klant: klantCode, klantNaam: klant.naam, datasetId: leeg ? null : ds.id, gz, email: IK.email, admin: EFF().admin, team: TEAM, leeg, startView,
+    window.__TT = {sb, klant: klantCode, klantNaam: klant.naam, datasetId: leeg || !ds ? null : ds.id, gz, email: IK.email, admin: EFF().admin, team: TEAM, leeg, startView,
+      api: maakApi(tool, klant, leeg ? null : ds, leeg ? null : bytes),
       wijzigingen: tool.wijzigingen || [], thema: document.documentElement.dataset.theme || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'), alsNaam: ALS ? EFF().naam : null};
     location.hash = encodeURIComponent(tool.code) + '/' + encodeURIComponent(klantCode);
     const w = $('toolwrap'); w.innerHTML = ''; const f = document.createElement('iframe'); f.title = tool.naam; const u = URL.createObjectURL(new Blob([html], {type: 'text/html'})); f.src = u; f.onload = () => setTimeout(() => URL.revokeObjectURL(u), 5000); w.appendChild(f);
     toon('toolwrap'); document.title = `${klant.naam} · ${tool.naam}`;
   }catch(e){ alert(e.message || e); history.replaceState(null, '', location.pathname); toon('menu'); }
+}
+/* ---------- platformkit: TTP.api voor elke tool (zie projectnotitie platform-koppeling) ---------- */
+function maakApi(tool, klant, ds, bytes){
+  const T = tool.code, K = klant.code, kanaal = T + '_' + K;
+  let kan = null, mijnStaat = {}, aanwCb = null, instCb = null, wijzCb = null;
+  const fout = e => { throw new Error(e && e.message ? e.message : String(e)); };
+  const ik = {email: IK.email, naam: IK.naam, admin: EFF().admin};
+  const api = {
+    versie: 1, tool: T, toolNaam: tool.naam, klant: K, klantNaam: klant.naam, algemeen: K === 'algemeen',
+    ik, alsNaam: ALS ? EFF().naam : null, team: TEAM.filter(t => t.actief).map(t => ({email: t.email, naam: t.naam || t.email, rol: t.rol})),
+    naam: e => ((TEAM.find(t => t.email === e) || {}).naam) || e || '?',
+    thema: () => document.documentElement.dataset.theme || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'),
+    dashboard: () => window.ttNaarMenu(),
+    /* datapakket van deze klant (laatst gepubliceerd) */
+    pakket: ds ? {id: ds.id, snapshot: ds.snapshot, bestand: ds.bestand, meta: ds.meta || {}, op: ds.op, door: ds.door} : null,
+    bytes: () => bytes,
+    async json(){ if (!bytes) return null; const st = /\.gz$/.test(ds.bestand) ? new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip')) : new Blob([bytes]).stream(); return JSON.parse(await new Response(st).text()); },
+    /* keuzes per object (data = vrij object; per hoofdveld samengevoegd; null = veld wissen) */
+    async keuzes(){ const {data, error} = await sb.from('tool_keuzes').select('*').eq('tool_code', T).eq('klant_code', K); if (error) fout(error); return data; },
+    async bewaar(key, patch, opt = {}){ const p = {}, wis = []; for (const [k, v] of Object.entries(patch || {})) (v === null || v === undefined ? wis.push(k) : p[k] = v);
+      const {data, error} = await sb.rpc('tool_keuze_bewaar', {p_tool: T, p_klant: K, p_key: String(key), p_nummer: opt.nummer != null ? String(opt.nummer) : null, p_patch: p, p_wis: wis, p_dataset: ds ? ds.id : null});
+      if (error) fout(error); return data; },
+    async status(key, status, stand = null, opt = {}){ const {data, error} = await sb.from('tool_keuzes').upsert({tool_code: T, klant_code: K, object_key: String(key), object_nummer: opt.nummer != null ? String(opt.nummer) : undefined, status, akkoord_stand: status === 'akkoord' ? stand : null}, {onConflict: 'tool_code,klant_code,object_key', defaultToNull: false}).select().single();
+      if (error) fout(/admin/i.test(error.message) ? {message: 'Alleen de beheerder kan akkoord geven'} : error); return data; },
+    async verwijder(key){ const {error} = await sb.from('tool_keuzes').delete().eq('tool_code', T).eq('klant_code', K).eq('object_key', String(key)); if (error) fout(error); },
+    /* instellingen per klant (iedereen leest, alleen beheerder schrijft) */
+    async instellingen(){ const {data, error} = await sb.from('tool_instellingen').select('cfg').eq('tool_code', T).eq('klant_code', K).maybeSingle(); if (error) fout(error); return data ? data.cfg : null; },
+    async bewaarInstellingen(cfg){ const {error} = await sb.from('tool_instellingen').upsert({tool_code: T, klant_code: K, cfg}, {onConflict: 'tool_code,klant_code'}); if (error) fout(error); },
+    /* live: wijzigingen van collega's, instellingen, aanwezigheid */
+    onWijziging(cb){ wijzCb = cb; }, onInstellingen(cb){ instCb = cb; }, onAanwezig(cb){ aanwCb = cb; },
+    aanwezig(){ if (!kan) return []; const per = {}; for (const l of Object.values(kan.presenceState())) for (const p of l) if (p.email !== IK.email && !p.hub) per[p.email] = p; return Object.values(per); },
+    zetAanwezig(staat){ mijnStaat = Object.assign({}, staat || {}, {email: IK.email, naam: IK.naam, tool: T, klant: K}); if (kan) kan.track(mijnStaat); },
+    start(){ if (kan) return; kan = sb.channel(kanaal)
+      .on('postgres_changes', {event: '*', schema: 'public', table: 'tool_keuzes'}, p => { const r = p.eventType === 'DELETE' ? p.old : p.new; if (!r || r.tool_code !== T || r.klant_code !== K) return;
+        wijzCb && wijzCb({soort: p.eventType === 'DELETE' ? 'weg' : 'bijgewerkt', key: r.object_key, rij: p.eventType === 'DELETE' ? null : p.new, doorMij: p.eventType !== 'DELETE' && p.new.door === IK.email}); })
+      .on('postgres_changes', {event: '*', schema: 'public', table: 'tool_instellingen'}, p => { const r = p.new || {}; if (r.tool_code === T && r.klant_code === K && instCb) instCb(r.cfg, r.door); })
+      .on('presence', {event: 'sync'}, () => aanwCb && aanwCb(api.aanwezig()))
+      .subscribe(st => { if (st === 'SUBSCRIBED'){ kan.track(Object.assign({email: IK.email, naam: IK.naam, tool: T, klant: K}, mijnStaat)); wijzCb && wijzCb({soort: 'verbonden'}); } }); },
+    /* gedeelde weergaven (filters) */
+    async weergaven(){ const {data, error} = await sb.from('weergaven').select('*').eq('tool_code', T).eq('klant_code', K).order('naam'); if (error) fout(error); return data; },
+    async bewaarWeergave(naam, filters){ const {data, error} = await sb.from('weergaven').insert({tool_code: T, klant_code: K, naam, filters, gedeeld: true}).select().single(); if (error) fout(error); return data; },
+    async verwijderWeergave(id){ const {error} = await sb.from('weergaven').delete().eq('id', id); if (error) fout(error); },
+    /* beheerder: nieuw datapakket publiceren (JSON-object, of een bestand zoals een .xlsx) */
+    async publiceer(inhoud, opt = {}){
+      if (!EFF().admin) fout({message: 'Alleen de beheerder kan publiceren'});
+      let blob, ext, type;
+      if (inhoud instanceof Blob){ blob = inhoud; ext = opt.extensie || (inhoud.name && inhoud.name.split('.').pop()) || 'bin'; type = opt.type || inhoud.type || 'application/octet-stream'; }
+      else { blob = new Blob([await new Response(new Blob([JSON.stringify(inhoud)]).stream().pipeThrough(new CompressionStream('gzip'))).arrayBuffer()]); ext = 'json.gz'; type = 'application/gzip'; }
+      const pad = `${K}/${T}/${new Date().toISOString().replace(/[:.]/g, '-')}.${ext}`;
+      const up = await sb.storage.from('data').upload(pad, blob, {contentType: type}); if (up.error) fout(up.error);
+      const {data, error} = await sb.from('datasets').insert({klant_code: K, tool_code: T, snapshot: String(opt.snapshot || new Date().toISOString().slice(0, 10)), bestand: pad, bytes: blob.size, meta: opt.meta || {}}).select().single();
+      if (error) fout(error); await laadMenu(); return data; },
+    async log(n = 50){ const {data} = await sb.from('logboek').select('*').eq('tool_code', T).eq('klant_code', K).order('op', {ascending: false}).limit(n); return data || []; },
+  };
+  return api;
 }
 window.ttNaarMenu = async () => { $('toolwrap').innerHTML = ''; sb.removeAllChannels(); history.replaceState(null, '', location.pathname); document.title = 'Taxatietooling'; delete window.__TT; await laadMenu(); toon('menu'); };
 window.ttNaPubliceren = async () => { await laadMenu(); };
@@ -424,8 +493,38 @@ function renderBeheer(){
   $('teamtabel').querySelectorAll('[data-actief]').forEach(b => b.onclick = async () => { const t = TEAM.find(x => x.email === b.dataset.actief);
     const r = await sb.from('team').update({actief: !t.actief}).eq('email', t.email); if (r.error) return $('t-msg').innerHTML = `<div class="melding fout">${esc(r.error.message)}</div>`;
     await laadMenu(); });
-  laadLog();
+  laadLog(); renderToolBeheer();
 }
+function renderToolBeheer(){
+  $('nt-codes').innerHTML = BINNENKORT.filter(([c]) => !ALLETOOLS.find(t => t.code === c)).map(([c, n]) => `<option value="${esc(c)}">${esc(n)}</option>`).join('');
+  $('tooltabel').innerHTML = '<tr><th>Tool</th><th>Code</th><th>Versie</th><th>Soort</th><th>Status</th><th>Nieuwe versie uploaden</th></tr>' + ALLETOOLS.map(t => `<tr>
+    <td><b>${esc(t.naam)}</b><div class="klein">${esc(t.omschrijving || '')}</div></td><td class="klein">${esc(t.code)}</td><td>${esc(t.versie || '–')}</td>
+    <td class="klein">${t.instellingen && t.instellingen.klantloos ? 'zonder klant' : 'per klant'}</td>
+    <td><button class="knop klein" data-tactief="${esc(t.code)}">${t.actief ? '● aan' : '○ uit'}</button></td>
+    <td><div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><input type="file" accept=".html,text/html" data-tbestand="${esc(t.code)}" style="max-width:210px;font-size:11px">
+      <input data-tversie="${esc(t.code)}" placeholder="versie" style="width:70px;padding:5px 7px;border:1px solid var(--hair2);border-radius:7px;background:var(--paper);color:var(--ink)">
+      <button class="knop klein prim" data-tupload="${esc(t.code)}">Uploaden</button></div></td></tr>`).join('');
+  $('tooltabel').querySelectorAll('[data-tactief]').forEach(b => b.onclick = async () => { const t = ALLETOOLS.find(x => x.code === b.dataset.tactief);
+    if (!t.actief && !t.versie && !confirm('Er is nog geen versie geüpload. Toch aanzetten?')) return;
+    const r = await sb.from('tools').update({actief: !t.actief}).eq('code', t.code); if (r.error) return $('nt-msg').innerHTML = `<div class="melding fout">${esc(r.error.message)}</div>`; await laadMenu(); });
+  $('tooltabel').querySelectorAll('[data-tupload]').forEach(b => b.onclick = async () => { const c = b.dataset.tupload, f = $('tooltabel').querySelector(`[data-tbestand="${c}"]`).files[0], v = $('tooltabel').querySelector(`[data-tversie="${c}"]`).value.trim();
+    const m = t => $('nt-msg').innerHTML = t;
+    if (!f) return m('<div class="melding fout">Kies eerst het HTML-bestand.</div>'); if (!v) return m('<div class="melding fout">Vul het versienummer in (bv. 1.00).</div>');
+    const tekst = await f.text(); if (!/<html|<!doctype/i.test(tekst.slice(0, 500))) return m('<div class="melding fout">Dit lijkt geen HTML-bestand.</div>');
+    b.disabled = true; m(`<div class="melding">${esc(f.name)} wordt geüpload…</div>`);
+    const pad = `${c}/app.html`, up = await sb.storage.from('apps').upload(pad, new Blob([tekst], {type: 'text/html'}), {contentType: 'text/html', upsert: true});
+    if (up.error){ b.disabled = false; return m(`<div class="melding fout">${esc(up.error.message)}</div>`); }
+    const r = await sb.from('tools').update({versie: v, app_pad: pad}).eq('code', c); b.disabled = false;
+    m(r.error ? `<div class="melding fout">${esc(r.error.message)}</div>` : `<div class="melding ok">Versie ${esc(v)} van ${esc(c)} staat klaar. Wie de tool opent, krijgt deze versie.</div>`); await laadMenu(); });
+}
+$('nt-toe').addEventListener('click', async () => {
+  const code = $('nt-code').value.trim().toLowerCase(), naam = $('nt-naam').value.trim() || (BINNENKORT.find(x => x[0] === code) || [])[1], oms = $('nt-oms').value.trim() || (BINNENKORT.find(x => x[0] === code) || [])[2] || null;
+  const m = t => $('nt-msg').innerHTML = t;
+  if (!/^[a-z0-9_]+$/.test(code)) return m('<div class="melding fout">Code: alleen kleine letters, cijfers en _.</div>'); if (!naam) return m('<div class="melding fout">Vul een naam in.</div>');
+  const r = await sb.from('tools').insert({code, naam, omschrijving: oms, actief: false, volgorde: 10 + ALLETOOLS.length * 10, app_pad: code + '/app.html', instellingen: $('nt-kl').checked ? {klantloos: true} : {}});
+  m(r.error ? `<div class="melding fout">${esc(r.error.message)}</div>` : `<div class="melding ok">${esc(naam)} aangemaakt (staat uit). Upload nu een versie.</div>`);
+  if (!r.error){ $('nt-code').value = $('nt-naam').value = $('nt-oms').value = ''; $('nt-kl').checked = false; await laadMenu(); }
+});
 $('t-toe').addEventListener('click', async () => {
   const email = $('t-email').value.trim().toLowerCase(), naam = $('t-naam').value.trim(), rol = $('t-rol').value;
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return $('t-msg').innerHTML = '<div class="melding fout">Vul een geldig mailadres in.</div>';

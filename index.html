@@ -62,6 +62,11 @@ h2{font:800 11px var(--body);text-transform:uppercase;letter-spacing:1.4px;color
 .tegel.binnenkort{cursor:default;opacity:.55}
 .tegel.binnenkort:hover{border-color:var(--hairline);transform:none}
 .tegel.nieuw{border-style:dashed;align-items:center;justify-content:center;color:var(--ink-soft);font-weight:700}
+.stpil{font:800 9.5px var(--body);text-transform:uppercase;letter-spacing:.6px;padding:2px 7px;border-radius:99px}
+.stpil.tb{background:color-mix(in srgb,var(--warn) 18%,transparent);color:var(--warn)}
+.stpil.ak{background:color-mix(in srgb,var(--ok) 16%,transparent);color:var(--ok)}
+.tegel .v.online:empty{display:none}
+.tegel .v .nu{color:var(--ok);font-weight:700}
 .badge{font:800 9.5px var(--body);text-transform:uppercase;letter-spacing:.7px;padding:2px 7px;border-radius:99px;background:var(--paper-dim);color:var(--ink-soft);align-self:flex-start}
 /* ---------- beheer ---------- */
 .paneel{background:var(--card);border:1px solid var(--hairline);border-radius:14px;padding:16px;margin-top:10px}
@@ -130,6 +135,7 @@ th{font:800 9.5px var(--body);text-transform:uppercase;letter-spacing:.8px;color
           <button class="knop klein" id="backup">⤓ Download back-up</button><span id="b-msg" class="klein" style="margin-left:8px"></span></div>
       </div>
       <div class="paneel" style="grid-column:1/-1"><b>Logboek</b> <span class="klein">laatste 60 wijzigingen</span>
+        <select id="logklant" style="margin-left:10px;padding:4px 8px;border:1px solid var(--hair2);border-radius:7px;background:var(--paper);color:var(--ink)"><option value="">alle klanten</option></select>
         <table class="log" id="logtabel"></table>
       </div>
     </div>
@@ -198,9 +204,11 @@ async function laadMenu(){
     sb.from('tools').select('*').eq('actief', true).order('volgorde'),
     sb.from('klanten').select('*').order('naam'),
     sb.from('datasets').select('id, klant_code, tool_code, snapshot, bestand, bytes, meta, door, op, status').eq('status', 'gepubliceerd').order('op', {ascending: false}),
-    sb.from('mt_keuzes').select('klant_code, op, inst, voorstel, toelichting')]);
+    sb.from('mt_keuzes').select('klant_code, op, inst, voorstel, toelichting, status')]);
   TOOLS = a.data || []; KLANTEN = b.data || []; DATASETS = c.data || [];
-  KEUZETEL = {}; for (const r of d.data || []){ if (!(r.inst && Object.keys(r.inst).length) && !r.voorstel && !r.toelichting) continue; const k = KEUZETEL[r.klant_code] || (KEUZETEL[r.klant_code] = {n: 0, op: null}); k.n++; if (!k.op || r.op > k.op) k.op = r.op; }
+  KEUZETEL = {}; for (const r of d.data || []){ const k = KEUZETEL[r.klant_code] || (KEUZETEL[r.klant_code] = {n: 0, op: null, tb: 0, ak: 0});
+    if (r.status === 'ter_beoordeling') k.tb++; if (r.status === 'akkoord') k.ak++;
+    if (!(r.inst && Object.keys(r.inst).length) && !r.voorstel && !r.toelichting) continue; k.n++; if (!k.op || r.op > k.op) k.op = r.op; }
   renderTools();
   if (GEKOZEN) renderKlanten(GEKOZEN);
   $('beheerblok').classList.toggle('verborgen', !IK.admin);
@@ -220,7 +228,9 @@ function renderKlanten(code){
   $('klanten').innerHTML = lijst.map(k => { const d = laatste[k.code], kz = KEUZETEL[k.code];
     return `<button class="tegel" data-klant="${esc(k.code)}"><span class="t">${esc(k.naam)}</span>
       <span class="o">${d ? 'Data ' + esc(d.snapshot) + (d.meta && d.meta.vhe ? ' · ' + nl(d.meta.vhe) + ' eenheden' : '') : '<i>nog geen data gepubliceerd</i>'}</span>
-      <span class="v">${d ? `<span>gepubliceerd ${esc(tijd(d.op))}</span>` : ''}${kz ? `<span>${kz.n} aanpassing${kz.n === 1 ? '' : 'en'} · laatst ${esc(tijd(kz.op))}</span>` : ''}</span></button>`; }).join('')
+      <span class="v">${d ? `<span>gepubliceerd ${esc(tijd(d.op))}</span>` : ''}${kz && kz.n ? `<span>${kz.n} aanpassing${kz.n === 1 ? '' : 'en'} · laatst ${esc(tijd(kz.op))}</span>` : ''}</span>
+      ${kz && (kz.tb || kz.ak) ? `<span class="v">${kz.tb ? `<span class="stpil tb">${kz.tb} ter beoordeling</span>` : ''}${kz.ak ? `<span class="stpil ak">${kz.ak} akkoord</span>` : ''}</span>` : ''}
+      <span class="v online" id="online-${esc(k.code)}"></span></button>`; }).join('')
     + (IK.admin ? '<button class="tegel nieuw" id="nieuweklant">+ Nieuwe klant</button>' : '')
     + (!lijst.length && !IK.admin ? '<p class="klein">Nog geen klanten met data voor deze tool.</p>' : '');
   $('klanten').querySelectorAll('[data-klant]').forEach(b => b.onclick = () => openTool(tool, b.dataset.klant));
@@ -232,6 +242,22 @@ function renderKlanten(code){
     await laadMenu(); renderKlanten(GEKOZEN);
   };
   $('klantblok').scrollIntoView({behavior: 'smooth', block: 'nearest'});
+  volgOnline(code, lijst.map(k => k.code));
+}
+
+/* ---------- wie is waar (aanwezigheid per klant; het hoofdmenu kijkt mee zonder zelf mee te tellen) ---------- */
+let ONLINE_KAN = [];
+function stopOnline(){ for (const c of ONLINE_KAN) sb.removeChannel(c); ONLINE_KAN = []; }
+function volgOnline(tool, codes){
+  stopOnline();
+  for (const code of codes){
+    const c = sb.channel(tool.replace('markthuur_wonen', 'mt_wonen') + '_' + code);
+    c.on('presence', {event: 'sync'}, () => { const el = $('online-' + code); if (!el) return; const per = {};
+      for (const l of Object.values(c.presenceState())) for (const p of l) if (p.email !== IK.email && !p.hub) per[p.email] = p;
+      const a = Object.values(per); el.innerHTML = a.length ? `<span class="nu">● ${esc(a.map(p => p.naam + (p.cx ? ' (' + String(p.cx).split(' ')[0] + ')' : '')).join(', '))}</span>` : ''; })
+     .subscribe(st => { if (st === 'SUBSCRIBED') c.track({email: IK.email, naam: IK.naam, hub: true}); });   /* zonder eigen track geeft Supabase geen aanwezigheid door */
+    ONLINE_KAN.push(c);
+  }
 }
 
 /* ---------- tool openen (code + data afgeschermd in Supabase, cache per bestand) ---------- */
@@ -250,7 +276,7 @@ async function haal(bucket, pad, tekst, stempel = ''){
 }
 async function openTool(tool, klantCode){
   const klant = KLANTEN.find(k => k.code === klantCode); if (!klant){ toon('menu'); return; }
-  toon('laden'); $('ladentekst').textContent = `${tool.naam} · ${klant.naam} wordt geladen…`;
+  toon('laden'); $('ladentekst').textContent = `${tool.naam} · ${klant.naam} wordt geladen…`; stopOnline();
   try{
     let ds = DATASETS.find(d => d.tool_code === tool.code && d.klant_code === klantCode), leeg = false;
     if (!ds){ if (!IK.admin) throw new Error('Voor deze klant is nog geen data gepubliceerd.'); ds = DATASETS.find(d => d.tool_code === tool.code); leeg = true;
@@ -266,7 +292,7 @@ async function openTool(tool, klantCode){
     toon('toolwrap'); document.title = `${klant.naam} · ${tool.naam}`;
   }catch(e){ alert(e.message || e); history.replaceState(null, '', location.pathname); toon('menu'); }
 }
-window.ttNaarMenu = async () => { $('toolwrap').innerHTML = ''; history.replaceState(null, '', location.pathname); document.title = 'Taxatietooling'; delete window.__TT; await laadMenu(); toon('menu'); };
+window.ttNaarMenu = async () => { $('toolwrap').innerHTML = ''; sb.removeAllChannels(); history.replaceState(null, '', location.pathname); document.title = 'Taxatietooling'; delete window.__TT; await laadMenu(); toon('menu'); };
 window.ttNaPubliceren = async () => { await laadMenu(); };
 
 /* ---------- beheer (alleen admin) ---------- */
@@ -294,7 +320,9 @@ $('c-zet').addEventListener('click', async () => {
   if (r.ok) $('c-nieuw').value = '';
 });
 async function laadLog(){
-  const {data} = await sb.from('logboek').select('*').order('op', {ascending: false}).limit(60);
+  const sel = $('logklant'), kies = sel.value; sel.innerHTML = '<option value="">alle klanten</option>' + KLANTEN.map(k => `<option value="${esc(k.code)}"${k.code === kies ? ' selected' : ''}>${esc(k.naam)}</option>`).join('');
+  let q = sb.from('logboek').select('*').order('op', {ascending: false}).limit(60); if (kies) q = q.eq('klant_code', kies);
+  const {data} = await q;
   const naam = e => (TEAM.find(t => t.email === e) || {}).naam || e;
   const wat = r => { if (r.tabel === 'mt_keuzes'){ const n = r.nieuw || {}, o = r.oud || {}, d = [];
       if (r.actie === 'delete') return 'aanpassingen verwijderd';
@@ -310,6 +338,7 @@ async function laadLog(){
   $('logtabel').innerHTML = '<tr><th>Wanneer</th><th>Wie</th><th>Klant</th><th>Object</th><th>Wat</th></tr>' + (data || []).map(r => `<tr><td class="m">${esc(new Date(r.op).toLocaleString('nl-NL'))}</td><td>${esc(naam(r.door))}</td><td>${esc(r.klant_code || '')}</td><td>${esc(String(r.sleutel || '').split('|')[0])}</td><td>${esc(wat(r))}</td></tr>`).join('')
     || '<tr><td colspan="5" class="m">nog geen wijzigingen</td></tr>';
 }
+$('logklant').addEventListener('change', laadLog);
 $('backup').addEventListener('click', async () => {
   $('b-msg').textContent = 'bezig…';
   const tabellen = ['team', 'klanten', 'tools', 'datasets', 'mt_keuzes', 'mt_instellingen', 'weergaven', 'logboek'], uit = {gemaakt: new Date().toISOString()};

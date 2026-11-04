@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Taxatietooling</title>
+<meta name="robots" content="noindex, nofollow">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.min.js"></script>
+<style>
+:root{
+  --canvas:#E7EBEF; --paper:#FBFCFD; --paper-dim:#F0F3F6; --card:#FFFFFF;
+  --ink:#1C2733; --ink-soft:#5A6B7C; --acc:#4A7FB5; --acc-deep:#2E5C8A;
+  --ok:#3B9C5F; --warn:#D98E2B; --bad:#C8463C;
+  --hairline:rgba(28,39,51,.14); --hair2:rgba(28,39,51,.25);
+  --display:'Segoe UI Variable Display','Segoe UI',Inter,system-ui,sans-serif;
+  --body:'Segoe UI Variable Text','Segoe UI',Inter,system-ui,sans-serif;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --canvas:#0F1317; --paper:#171C22; --paper-dim:#11151A; --card:#1D242C;
+  --ink:#E4E9EE; --ink-soft:#93A1AF; --acc:#6FA7DD; --acc-deep:#4A7FB5;
+  --hairline:rgba(228,233,238,.14); --hair2:rgba(228,233,238,.25); } }
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--canvas);color:var(--ink);font:14px/1.45 var(--body)}
+button,input,select{font-family:var(--body);font-size:13px}
+.verborgen{display:none !important}
+/* ---------- inloggen ---------- */
+#inlog{min-height:100%;display:flex;align-items:center;justify-content:center;padding:24px 16px}
+.inlogkaart{background:var(--card);border:1px solid var(--hairline);border-radius:16px;padding:28px 28px 22px;width:100%;max-width:380px;box-shadow:0 12px 40px rgba(15,25,40,.08)}
+.merk{font:700 22px var(--display);letter-spacing:-.01em;margin:0}
+.merk small{display:block;font:600 11px var(--body);color:var(--ink-soft);text-transform:uppercase;letter-spacing:1.4px;margin-top:4px}
+.veld{display:flex;flex-direction:column;gap:5px;margin-top:16px}
+.veld label{font:700 11px var(--body);color:var(--ink-soft);text-transform:uppercase;letter-spacing:.8px}
+.veld input{padding:10px 12px;border:1px solid var(--hair2);border-radius:9px;background:var(--paper);color:var(--ink);font-size:14px}
+.veld input:focus{outline:2px solid var(--acc);outline-offset:1px;border-color:transparent}
+.knop{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:9px 14px;border-radius:9px;border:1px solid var(--hair2);background:var(--card);color:var(--ink);font-weight:700;cursor:pointer}
+.knop:hover{border-color:var(--acc)}
+.knop.prim{background:var(--acc-deep);border-color:var(--acc-deep);color:#fff}
+.knop.prim:hover{background:var(--acc)}
+.knop.klein{padding:5px 10px;font-size:12px;border-radius:7px}
+.knop:disabled{opacity:.5;cursor:default}
+#inlog .knop.prim{width:100%;margin-top:18px;padding:11px}
+.melding{font-size:12.5px;margin-top:12px;padding:8px 10px;border-radius:8px;background:var(--paper-dim);line-height:1.5}
+.melding.fout{border-left:3px solid var(--bad)} .melding.ok{border-left:3px solid var(--ok)}
+.klein{font-size:12px;color:var(--ink-soft)}
+/* ---------- menu ---------- */
+#menu{max-width:1120px;margin:0 auto;padding:22px 16px 40px}
+.kop{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.kop .merk{font-size:20px}
+.kop .rechts{margin-left:auto;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.wie{font-size:12.5px;color:var(--ink-soft)} .wie b{color:var(--ink)}
+.rolpil{font:800 9.5px var(--body);text-transform:uppercase;letter-spacing:.8px;padding:2px 7px;border-radius:99px;background:var(--paper-dim);color:var(--ink-soft)}
+.rolpil.admin{background:color-mix(in srgb,var(--acc) 16%,transparent);color:var(--acc-deep)}
+h2{font:800 11px var(--body);text-transform:uppercase;letter-spacing:1.4px;color:var(--ink-soft);margin:28px 0 10px}
+.tegels{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+.tegel{background:var(--card);border:1px solid var(--hairline);border-radius:14px;padding:16px 16px 14px;cursor:pointer;text-align:left;color:var(--ink);display:flex;flex-direction:column;gap:6px;min-height:120px;transition:border-color .15s, transform .15s}
+.tegel:hover{border-color:var(--acc);transform:translateY(-1px)}
+.tegel.aan{border-color:var(--acc-deep);box-shadow:inset 0 0 0 1px var(--acc-deep)}
+.tegel .t{font:700 16px var(--display)}
+.tegel .o{font-size:12.5px;color:var(--ink-soft)}
+.tegel .v{margin-top:auto;font-size:11.5px;color:var(--ink-soft);display:flex;gap:10px;flex-wrap:wrap}
+.tegel.binnenkort{cursor:default;opacity:.55}
+.tegel.binnenkort:hover{border-color:var(--hairline);transform:none}
+.tegel.nieuw{border-style:dashed;align-items:center;justify-content:center;color:var(--ink-soft);font-weight:700}
+.badge{font:800 9.5px var(--body);text-transform:uppercase;letter-spacing:.7px;padding:2px 7px;border-radius:99px;background:var(--paper-dim);color:var(--ink-soft);align-self:flex-start}
+/* ---------- beheer ---------- */
+.paneel{background:var(--card);border:1px solid var(--hairline);border-radius:14px;padding:16px;margin-top:10px}
+.beheer{display:grid;grid-template-columns:minmax(0,3fr) minmax(0,2fr);gap:12px}
+@media (max-width:860px){ .beheer{grid-template-columns:1fr} }
+#teamtabel td:nth-child(2){word-break:break-all}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+td,th{padding:6px 8px;border-bottom:1px solid var(--hairline);text-align:left;vertical-align:middle}
+th{font:800 9.5px var(--body);text-transform:uppercase;letter-spacing:.8px;color:var(--ink-soft)}
+.rij{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px}
+.rij input,.rij select{padding:7px 9px;border:1px solid var(--hair2);border-radius:8px;background:var(--paper);color:var(--ink);min-width:0;flex:1 1 120px}
+.uit td{color:var(--ink-soft);text-decoration:line-through}
+.log td{font-size:12px}
+.log .m{color:var(--ink-soft)}
+/* ---------- tool ---------- */
+#toolwrap{position:fixed;inset:0;background:var(--canvas)}
+#toolwrap iframe{border:0;width:100%;height:100%;display:block}
+#laden{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px;background:var(--canvas);z-index:5}
+#laden b{font:700 18px var(--display)}
+#laden span{font-size:12.5px;color:var(--ink-soft)}
+@media (max-width:560px){ .kop .rechts{margin-left:0} }
+</style>
+</head>
+<body>
+<div id="laden"><b>Taxatietooling</b><span id="ladentekst">laden…</span></div>
+
+<!-- inloggen -->
+<div id="inlog" class="verborgen">
+  <form class="inlogkaart" id="inlogform" autocomplete="on">
+    <p class="merk">Taxatietooling<small>Jesper Kivits Vastgoedadvies</small></p>
+    <div class="veld"><label for="email">Mailadres</label><input id="email" type="email" autocomplete="email" required placeholder="naam@kantoor.nl"></div>
+    <div class="veld"><label for="code">Teamcode</label><input id="code" type="password" autocomplete="current-password" required></div>
+    <button class="knop prim" type="submit" id="inlogknop">Inloggen</button>
+    <div id="inlogmsg"></div>
+    <p class="klein" style="margin:14px 0 0">Eén keer per computer; daarna blijf je ingelogd. Geen toegang? Vraag Jesper.</p>
+  </form>
+</div>
+
+<!-- hoofdmenu -->
+<div id="menu" class="verborgen">
+  <div class="kop">
+    <p class="merk">Taxatietooling</p>
+    <div class="rechts"><span class="wie" id="wie"></span><button class="knop klein" id="uitlog">Uitloggen</button></div>
+  </div>
+  <h2>Tools</h2>
+  <div class="tegels" id="tools"></div>
+  <div id="klantblok" class="verborgen">
+    <h2 id="klantkop">Klanten</h2>
+    <div class="tegels" id="klanten"></div>
+  </div>
+  <div id="beheerblok" class="verborgen">
+    <h2>Beheer</h2>
+    <div class="beheer">
+      <div class="paneel"><b>Team</b>
+        <table id="teamtabel"></table>
+        <div class="rij"><input id="t-naam" placeholder="naam"><input id="t-email" placeholder="mailadres" type="email"><select id="t-rol"><option value="taxateur">taxateur</option><option value="admin">admin</option></select><button class="knop klein prim" id="t-toe">Toevoegen</button></div>
+        <p class="klein" style="margin:8px 0 0">Er wordt geen mail verstuurd. Stuur zelf de link en de teamcode. Uitzetten = direct geen toegang meer.</p>
+        <div id="t-msg"></div>
+      </div>
+      <div class="paneel"><b>Teamcode</b>
+        <div class="rij"><input id="c-nieuw" type="password" placeholder="nieuwe teamcode (min. 8 tekens)" autocomplete="new-password"><button class="knop klein prim" id="c-zet">Wijzigen</button></div>
+        <p class="klein" style="margin:8px 0 0">Wie al is ingelogd, blijft ingelogd. Nieuwe computers hebben de nieuwe code nodig.</p>
+        <div id="c-msg"></div>
+        <div style="margin-top:16px"><b>Back-up</b>
+          <p class="klein" style="margin:4px 0 8px">Alle keuzes, instellingen, team en logboek als één bestand (gratis Supabase maakt zelf geen back-ups).</p>
+          <button class="knop klein" id="backup">⤓ Download back-up</button><span id="b-msg" class="klein" style="margin-left:8px"></span></div>
+      </div>
+      <div class="paneel" style="grid-column:1/-1"><b>Logboek</b> <span class="klein">laatste 60 wijzigingen</span>
+        <table class="log" id="logtabel"></table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="toolwrap" class="verborgen"></div>
+
+<script>
+const SB_URL = 'https://fgjytwujyrrnwlwxjvzd.supabase.co';
+const SB_KEY = 'sb_publishable_o0lEYAB79EibvczOZtPJ4Q_ljC58vPe';   /* publieke sleutel: toegang wordt bepaald door inloggen + rechten in de database */
+const sb = supabase.createClient(SB_URL, SB_KEY, {auth: {persistSession: true, autoRefreshToken: true, storageKey: 'tt-sessie'}});
+const $ = id => document.getElementById(id);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
+const toon = (...ids) => { for (const id of ['laden', 'inlog', 'menu', 'toolwrap']) $(id).classList.toggle('verborgen', !ids.includes(id)); };
+const tijd = op => { if (!op) return ''; const s = (Date.now() - new Date(op)) / 1000; return s < 60 ? 'zojuist' : s < 3600 ? Math.round(s / 60) + ' min geleden' : s < 86400 ? Math.round(s / 3600) + ' uur geleden' : new Date(op).toLocaleDateString('nl-NL', {day: 'numeric', month: 'short', year: 'numeric'}); };
+const nl = (v, d = 0) => v == null ? '–' : Number(v).toLocaleString('nl-NL', {minimumFractionDigits: d, maximumFractionDigits: d});
+const IK = {email: null, naam: null, admin: false};
+let TEAM = [], TOOLS = [], KLANTEN = [], DATASETS = [], KEUZETEL = {}, GEKOZEN = null;
+/* binnenkort: tools die nog op het platform komen (alleen ter oriëntatie) */
+const BINNENKORT = [['BOG · MOG · ZOG', 'Markthuren niet-wonen getoetst aan brainbay-referenties'], ['Controletool marktwaarde wonen', 'Taxatiecontrole en parameterlab'], ['Bollengrafiek', 'Beleggingsreferenties wonen'], ['Disconteringsvoet', 'Opbouw DE/UP per complex']];
+
+/* ---------- opstarten ---------- */
+(async function start(){
+  const {data} = await sb.auth.getSession();
+  if (!data.session){ toon('inlog'); $('email').focus(); return; }
+  await naInloggen();
+})();
+
+$('inlogform').addEventListener('submit', async e => {
+  e.preventDefault();
+  const email = $('email').value.trim().toLowerCase(), code = $('code').value, m = $('inlogmsg'), k = $('inlogknop');
+  k.disabled = true; m.innerHTML = '';
+  try{
+    const r = await fetch(SB_URL + '/functions/v1/toegang', {method: 'POST', headers: {'Content-Type': 'application/json', apikey: SB_KEY}, body: JSON.stringify({actie: 'inloggen', email, code})});
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(j.fout || 'Inloggen mislukt');
+    const v = await sb.auth.verifyOtp({token_hash: j.token_hash, type: 'magiclink'});
+    if (v.error) throw new Error('Sessie starten mislukt: ' + v.error.message);
+    $('code').value = '';
+    await naInloggen();
+  }catch(err){ m.innerHTML = `<div class="melding fout">${esc(err.message)}</div>`; }
+  k.disabled = false;
+});
+$('uitlog').addEventListener('click', async () => { await sb.auth.signOut(); location.hash = ''; location.reload(); });
+
+async function naInloggen(){
+  toon('laden'); $('ladentekst').textContent = 'hoofdmenu laden…';
+  const {data: u} = await sb.auth.getUser();
+  IK.email = (u.user && u.user.email || '').toLowerCase();
+  const t = await sb.from('team').select('*').order('naam');
+  TEAM = t.data || [];
+  const mij = TEAM.find(x => x.email === IK.email);
+  if (!mij || !mij.actief){ await sb.auth.signOut(); toon('inlog'); $('inlogmsg').innerHTML = '<div class="melding fout">Dit mailadres heeft (nog) geen toegang. Vraag Jesper.</div>'; return; }
+  IK.naam = mij.naam || IK.email; IK.admin = mij.rol === 'admin';
+  $('wie').innerHTML = `<b>${esc(IK.naam)}</b> <span class="rolpil${IK.admin ? ' admin' : ''}">${IK.admin ? 'beheerder' : 'taxateur'}</span>`;
+  await laadMenu();
+  const h = decodeURIComponent(location.hash.slice(1)).split('/');
+  if (h[0] && h[1]){ const tool = TOOLS.find(x => x.code === h[0]); if (tool) return openTool(tool, h[1]); }
+  toon('menu');
+}
+
+/* ---------- hoofdmenu ---------- */
+async function laadMenu(){
+  const [a, b, c, d] = await Promise.all([
+    sb.from('tools').select('*').eq('actief', true).order('volgorde'),
+    sb.from('klanten').select('*').order('naam'),
+    sb.from('datasets').select('id, klant_code, tool_code, snapshot, bestand, bytes, meta, door, op, status').eq('status', 'gepubliceerd').order('op', {ascending: false}),
+    sb.from('mt_keuzes').select('klant_code, op, inst, voorstel, toelichting')]);
+  TOOLS = a.data || []; KLANTEN = b.data || []; DATASETS = c.data || [];
+  KEUZETEL = {}; for (const r of d.data || []){ if (!(r.inst && Object.keys(r.inst).length) && !r.voorstel && !r.toelichting) continue; const k = KEUZETEL[r.klant_code] || (KEUZETEL[r.klant_code] = {n: 0, op: null}); k.n++; if (!k.op || r.op > k.op) k.op = r.op; }
+  renderTools();
+  if (GEKOZEN) renderKlanten(GEKOZEN);
+  $('beheerblok').classList.toggle('verborgen', !IK.admin);
+  if (IK.admin) renderBeheer();
+}
+function renderTools(){
+  $('tools').innerHTML = TOOLS.map(t => { const n = new Set(DATASETS.filter(d => d.tool_code === t.code).map(d => d.klant_code)).size;
+    return `<button class="tegel${GEKOZEN === t.code ? ' aan' : ''}" data-tool="${esc(t.code)}"><span class="t">${esc(t.naam)}</span><span class="o">${esc(t.omschrijving || '')}</span><span class="v"><span>${n} klant${n === 1 ? '' : 'en'}</span></span></button>`; }).join('')
+    + BINNENKORT.map(([n, o]) => `<div class="tegel binnenkort"><span class="badge">binnenkort</span><span class="t">${esc(n)}</span><span class="o">${esc(o)}</span></div>`).join('');
+  $('tools').querySelectorAll('[data-tool]').forEach(b => b.onclick = () => { GEKOZEN = b.dataset.tool; renderTools(); renderKlanten(GEKOZEN); });
+}
+function renderKlanten(code){
+  const tool = TOOLS.find(t => t.code === code); if (!tool) return;
+  $('klantblok').classList.remove('verborgen'); $('klantkop').textContent = tool.naam + ' · kies een klant';
+  const laatste = {}; for (const d of DATASETS) if (d.tool_code === code && !laatste[d.klant_code]) laatste[d.klant_code] = d;
+  const lijst = KLANTEN.filter(k => laatste[k.code] || IK.admin);
+  $('klanten').innerHTML = lijst.map(k => { const d = laatste[k.code], kz = KEUZETEL[k.code];
+    return `<button class="tegel" data-klant="${esc(k.code)}"><span class="t">${esc(k.naam)}</span>
+      <span class="o">${d ? 'Data ' + esc(d.snapshot) + (d.meta && d.meta.vhe ? ' · ' + nl(d.meta.vhe) + ' eenheden' : '') : '<i>nog geen data gepubliceerd</i>'}</span>
+      <span class="v">${d ? `<span>gepubliceerd ${esc(tijd(d.op))}</span>` : ''}${kz ? `<span>${kz.n} aanpassing${kz.n === 1 ? '' : 'en'} · laatst ${esc(tijd(kz.op))}</span>` : ''}</span></button>`; }).join('')
+    + (IK.admin ? '<button class="tegel nieuw" id="nieuweklant">+ Nieuwe klant</button>' : '')
+    + (!lijst.length && !IK.admin ? '<p class="klein">Nog geen klanten met data voor deze tool.</p>' : '');
+  $('klanten').querySelectorAll('[data-klant]').forEach(b => b.onclick = () => openTool(tool, b.dataset.klant));
+  if ($('nieuweklant')) $('nieuweklant').onclick = async () => {
+    const naam = prompt('Naam van de klant (bv. Wonen Zuid):'); if (!naam) return;
+    const voorstel = naam.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+    const code = (prompt('Korte code (kleine letters, cijfers, _):', voorstel) || '').trim(); if (!code) return;
+    const r = await sb.from('klanten').insert({code, naam}); if (r.error) return alert('Toevoegen mislukt: ' + r.error.message);
+    await laadMenu(); renderKlanten(GEKOZEN);
+  };
+  $('klantblok').scrollIntoView({behavior: 'smooth', block: 'nearest'});
+}
+
+/* ---------- tool openen (code + data afgeschermd in Supabase, cache per bestand) ---------- */
+function cache(actie, sleutel, waarde){
+  return new Promise(res => { try{ const rq = indexedDB.open('tt_cache', 1);
+    rq.onupgradeneeded = () => rq.result.createObjectStore('kv'); rq.onerror = () => res(null);
+    rq.onsuccess = () => { const db = rq.result, tx = db.transaction('kv', actie === 'get' ? 'readonly' : 'readwrite'), st = tx.objectStore('kv');
+      const r = actie === 'get' ? st.get(sleutel) : st.put(waarde, sleutel); r.onsuccess = () => res(r.result); r.onerror = () => res(null); }; }catch(e){ res(null); } });
+}
+async function haal(bucket, pad, tekst, stempel = ''){
+  const sl = bucket + '/' + pad + '@' + stempel, c = await cache('get', sl); if (c) return c;
+  const {data, error} = await sb.storage.from(bucket).download(pad);
+  if (error) throw new Error('ophalen ' + pad + ': ' + error.message);
+  const w = tekst ? await data.text() : new Uint8Array(await data.arrayBuffer());
+  cache('put', sl, w); return w;
+}
+async function openTool(tool, klantCode){
+  const klant = KLANTEN.find(k => k.code === klantCode); if (!klant){ toon('menu'); return; }
+  toon('laden'); $('ladentekst').textContent = `${tool.naam} · ${klant.naam} wordt geladen…`;
+  try{
+    let ds = DATASETS.find(d => d.tool_code === tool.code && d.klant_code === klantCode), leeg = false;
+    if (!ds){ if (!IK.admin) throw new Error('Voor deze klant is nog geen data gepubliceerd.'); ds = DATASETS.find(d => d.tool_code === tool.code); leeg = true;
+      if (!ds) throw new Error('Er is nog geen basisdataset voor deze tool.'); }
+    const [{data: lijst}, gz] = await Promise.all([sb.storage.from('apps').list(tool.code), haal('data', ds.bestand, false)]);
+    /* app-versie: altijd de nieuwste (cache op pad + tijdstempel van het bestand) */
+    const app = (lijst || []).find(f => f.name === tool.app_pad.split('/').pop());
+    if (!app) throw new Error('De toolcode staat nog niet klaar.');
+    const html = await haal('apps', tool.app_pad, true, app.updated_at || app.created_at || '');
+    window.__TT = {sb, klant: klantCode, klantNaam: klant.naam, datasetId: leeg ? null : ds.id, gz, email: IK.email, admin: IK.admin, team: TEAM, leeg};
+    location.hash = encodeURIComponent(tool.code) + '/' + encodeURIComponent(klantCode);
+    const w = $('toolwrap'); w.innerHTML = ''; const f = document.createElement('iframe'); f.title = tool.naam; const u = URL.createObjectURL(new Blob([html], {type: 'text/html'})); f.src = u; f.onload = () => setTimeout(() => URL.revokeObjectURL(u), 5000); w.appendChild(f);
+    toon('toolwrap'); document.title = `${klant.naam} · ${tool.naam}`;
+  }catch(e){ alert(e.message || e); history.replaceState(null, '', location.pathname); toon('menu'); }
+}
+window.ttNaarMenu = async () => { $('toolwrap').innerHTML = ''; history.replaceState(null, '', location.pathname); document.title = 'Taxatietooling'; delete window.__TT; await laadMenu(); toon('menu'); };
+window.ttNaPubliceren = async () => { await laadMenu(); };
+
+/* ---------- beheer (alleen admin) ---------- */
+function renderBeheer(){
+  $('teamtabel').innerHTML = '<tr><th>Naam</th><th>Mailadres</th><th>Rol</th><th></th></tr>' + TEAM.map(t => `<tr class="${t.actief ? '' : 'uit'}"><td>${esc(t.naam || '')}</td><td>${esc(t.email)}</td><td>${esc(t.rol)}</td>
+    <td style="text-align:right">${t.email === IK.email ? '<span class="klein">jij</span>' : `<button class="knop klein" data-actief="${esc(t.email)}">${t.actief ? 'Uitzetten' : 'Aanzetten'}</button>`}</td></tr>`).join('');
+  $('teamtabel').querySelectorAll('[data-actief]').forEach(b => b.onclick = async () => { const t = TEAM.find(x => x.email === b.dataset.actief);
+    const r = await sb.from('team').update({actief: !t.actief}).eq('email', t.email); if (r.error) return $('t-msg').innerHTML = `<div class="melding fout">${esc(r.error.message)}</div>`;
+    await laadMenu(); });
+  laadLog();
+}
+$('t-toe').addEventListener('click', async () => {
+  const email = $('t-email').value.trim().toLowerCase(), naam = $('t-naam').value.trim(), rol = $('t-rol').value;
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return $('t-msg').innerHTML = '<div class="melding fout">Vul een geldig mailadres in.</div>';
+  const r = await sb.from('team').upsert({email, naam: naam || null, rol, actief: true}, {onConflict: 'email'});
+  $('t-msg').innerHTML = r.error ? `<div class="melding fout">${esc(r.error.message)}</div>` : `<div class="melding ok">${esc(naam || email)} toegevoegd. Er is geen mail verstuurd.</div>`;
+  if (!r.error){ $('t-email').value = $('t-naam').value = ''; await laadMenu(); }
+});
+$('c-zet').addEventListener('click', async () => {
+  const code = $('c-nieuw').value; if (code.length < 8) return $('c-msg').innerHTML = '<div class="melding fout">Minimaal 8 tekens.</div>';
+  const {data: s} = await sb.auth.getSession();
+  const r = await fetch(SB_URL + '/functions/v1/toegang', {method: 'POST', headers: {'Content-Type': 'application/json', apikey: SB_KEY, Authorization: 'Bearer ' + s.session.access_token}, body: JSON.stringify({actie: 'teamcode', code})});
+  const j = await r.json().catch(() => ({}));
+  $('c-msg').innerHTML = r.ok ? '<div class="melding ok">Teamcode gewijzigd.</div>' : `<div class="melding fout">${esc(j.fout || 'mislukt')}</div>`;
+  if (r.ok) $('c-nieuw').value = '';
+});
+async function laadLog(){
+  const {data} = await sb.from('logboek').select('*').order('op', {ascending: false}).limit(60);
+  const naam = e => (TEAM.find(t => t.email === e) || {}).naam || e;
+  const wat = r => { if (r.tabel === 'mt_keuzes'){ const n = r.nieuw || {}, o = r.oud || {}, d = [];
+      if (r.actie === 'delete') return 'aanpassingen verwijderd';
+      const ins = r.actie === 'insert', leegI = x => !x || !Object.keys(x).length;
+      const inst = x => { if (leegI(x)) return 'geen overrule'; const t = []; if (x.uit && x.uit.length) t.push(x.uit.length + ' ref uit'); if (x.in && x.in.length) t.push(x.in.length + ' ref aan'); if (x.top != null) t.push('top ' + x.top); if (x.mode || x.R != null) t.push('eigen schaal'); return t.join(', '); };
+      if (ins ? !leegI(n.inst) : JSON.stringify(n.inst) !== JSON.stringify(o.inst)) d.push('overrule: ' + inst(n.inst));
+      if (ins ? n.voorstel != null : n.voorstel !== o.voorstel) d.push(n.voorstel == null ? 'voorstel gewist' : 'voorstel € ' + nl(n.voorstel, 2) + '/m²');
+      if (ins ? !!n.toelichting : n.toelichting !== o.toelichting) d.push(n.toelichting ? 'toelichting: “' + String(n.toelichting).slice(0, 60) + '”' : 'toelichting gewist');
+      if (!ins && n.status !== o.status) d.push('status ' + n.status);
+      return d.join(' · ') || r.actie; }
+    if (r.tabel === 'datasets') return 'data gepubliceerd' + (r.nieuw && r.nieuw.snapshot ? ' (' + r.nieuw.snapshot + ')' : '');
+    if (r.tabel === 'mt_instellingen') return 'Config gewijzigd'; return r.tabel + ' ' + r.actie; };
+  $('logtabel').innerHTML = '<tr><th>Wanneer</th><th>Wie</th><th>Klant</th><th>Object</th><th>Wat</th></tr>' + (data || []).map(r => `<tr><td class="m">${esc(new Date(r.op).toLocaleString('nl-NL'))}</td><td>${esc(naam(r.door))}</td><td>${esc(r.klant_code || '')}</td><td>${esc(String(r.sleutel || '').split('|')[0])}</td><td>${esc(wat(r))}</td></tr>`).join('')
+    || '<tr><td colspan="5" class="m">nog geen wijzigingen</td></tr>';
+}
+$('backup').addEventListener('click', async () => {
+  $('b-msg').textContent = 'bezig…';
+  const tabellen = ['team', 'klanten', 'tools', 'datasets', 'mt_keuzes', 'mt_instellingen', 'weergaven', 'logboek'], uit = {gemaakt: new Date().toISOString()};
+  for (const t of tabellen){ let rijen = [], van = 0; for (;;){ const {data, error} = await sb.from(t).select('*').range(van, van + 999); if (error){ $('b-msg').textContent = t + ': ' + error.message; return; } rijen = rijen.concat(data); if (data.length < 1000) break; van += 1000; } uit[t] = rijen; }
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(uit, null, 1)], {type: 'application/json'}));
+  a.download = `taxatietooling_backup_${new Date().toISOString().slice(0, 10)}.json`; a.click(); $('b-msg').textContent = '✓ gedownload';
+});
+</script>
+</body>
+</html>

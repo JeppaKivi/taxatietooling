@@ -272,7 +272,7 @@ async function laadMenu(){
 function renderTools(){
   $('tools').innerHTML = TOOLS.map(t => { const n = new Set(DATASETS.filter(d => d.tool_code === t.code).map(d => d.klant_code)).size;
     return `<button class="tegel${GEKOZEN === t.code ? ' aan' : ''}" data-tool="${esc(t.code)}"><span class="t">${esc(t.naam)}</span><span class="o">${esc(t.omschrijving || '')}</span>
-      <span class="v"><span>${n} klant${n === 1 ? '' : 'en'}</span>${t.versie ? `<span>versie ${esc(t.versie)}</span>` : ''}${(t.wijzigingen || []).length ? `<span class="nieuwlink" data-nieuw="${esc(t.code)}">wat is er nieuw?</span>` : ''}</span></button>`; }).join('')
+      <span class="v"><span>${n} klant${n === 1 ? '' : 'en'}</span>${t.versie ? `<span>versie ${esc(t.versie)}</span>` : ''}</span></button>`; }).join('')
     + BINNENKORT.map(([n, o]) => `<div class="tegel binnenkort"><span class="badge">binnenkort</span><span class="t">${esc(n)}</span><span class="o">${esc(o)}</span></div>`).join('');
   $('tools').querySelectorAll('[data-tool]').forEach(b => b.onclick = e => { if (e.target.closest('[data-nieuw]')) return toonNieuw(b.dataset.tool); GEKOZEN = GEKOZEN === b.dataset.tool ? null : b.dataset.tool; renderTools();
     if (GEKOZEN) renderKlanten(GEKOZEN); else { $('klantblok').classList.add('verborgen'); stopOnline(); } });

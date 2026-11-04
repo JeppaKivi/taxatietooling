@@ -19,6 +19,10 @@
   --canvas:#0F1317; --paper:#171C22; --paper-dim:#11151A; --card:#1D242C;
   --ink:#E4E9EE; --ink-soft:#93A1AF; --acc:#6FA7DD; --acc-deep:#4A7FB5;
   --hairline:rgba(228,233,238,.14); --hair2:rgba(228,233,238,.25); } }
+:root[data-theme="dark"]{
+  --canvas:#0F1317; --paper:#171C22; --paper-dim:#11151A; --card:#1D242C;
+  --ink:#E4E9EE; --ink-soft:#93A1AF; --acc:#6FA7DD; --acc-deep:#4A7FB5;
+  --hairline:rgba(228,233,238,.14); --hair2:rgba(228,233,238,.25); }
 *{box-sizing:border-box}
 html,body{height:100%;margin:0}
 body{background:var(--canvas);color:var(--ink);font:14px/1.45 var(--body)}
@@ -44,14 +48,48 @@ button,input,select{font-family:var(--body);font-size:13px}
 .melding.fout{border-left:3px solid var(--bad)} .melding.ok{border-left:3px solid var(--ok)}
 .klein{font-size:12px;color:var(--ink-soft)}
 /* ---------- menu ---------- */
-#menu{max-width:1120px;margin:0 auto;padding:22px 16px 40px}
+#menu{max-width:var(--menuW,1560px);margin:0 auto;padding:22px 16px 40px;position:relative}
+/* indeling: blokken verslepen en breedte aanpassen (per computer onthouden) */
+.blokken{display:flex;flex-wrap:wrap;align-items:flex-start;margin:0 -7px}
+.blok{position:relative;box-sizing:border-box;padding:0 7px;width:calc(var(--w, 100) * 1%);min-width:0}
+.blok > header{display:flex;align-items:center;gap:8px;margin:26px 0 10px}
+.blok > header h2{margin:0}
+.greep{cursor:grab;color:var(--ink-soft);opacity:0;font-size:14px;line-height:1;user-select:none;padding:2px 3px;border-radius:4px;transition:opacity .15s}
+.blok:hover .greep{opacity:.8}
+.greep:hover{background:var(--paper-dim);opacity:1}
+.blok.sleept{opacity:.45}
+.blok.doel-voor::before,.blok.doel-na::after{content:'';position:absolute;top:22px;bottom:0;width:3px;border-radius:2px;background:var(--acc)}
+.blok.doel-voor::before{left:2px} .blok.doel-na::after{right:2px}
+.rsz{position:absolute;top:24px;bottom:0;right:0;width:9px;cursor:ew-resize;z-index:2}
+.rsz::after{content:'';position:absolute;top:50%;right:3px;width:3px;height:42px;margin-top:-21px;border-radius:2px;background:var(--hair2);opacity:0;transition:opacity .15s}
+.blok:hover .rsz::after,.rsz.actief::after{opacity:1}
+.pgr{position:absolute;top:0;bottom:0;width:10px;cursor:ew-resize;z-index:3}
+.pgr.l{left:-6px} .pgr.r{right:-6px}
+.pgr::after{content:'';position:absolute;top:120px;width:3px;height:60px;left:3px;border-radius:2px;background:var(--hair2);opacity:0;transition:opacity .15s}
+.pgr:hover::after,.pgr.actief::after{opacity:1}
+body.trekt{user-select:none;cursor:ew-resize}
+body.sleept-blok{user-select:none;cursor:grabbing}
+.breedtelabel{position:fixed;z-index:50;font:700 11px var(--body);background:var(--ink);color:var(--canvas);padding:3px 8px;border-radius:6px;pointer-events:none}
+/* profiel / bekijk als */
+.profiel{position:relative}
+.profielknop{display:inline-flex;align-items:center;gap:7px;border:1px solid transparent;background:none;color:var(--ink);padding:5px 8px;border-radius:9px;cursor:default;font-size:12.5px}
+.profielknop.kan{cursor:pointer}
+.profielknop.kan:hover{border-color:var(--hair2);background:var(--card)}
+.profielmenu{display:none;position:absolute;right:0;top:calc(100% + 6px);z-index:20;background:var(--card);border:1px solid var(--hairline);border-radius:12px;box-shadow:0 12px 34px rgba(15,25,40,.2);padding:6px;min-width:280px}
+.profielmenu.open{display:block}
+.profielmenu .kopje{font:800 9.5px var(--body);text-transform:uppercase;letter-spacing:.8px;color:var(--ink-soft);padding:6px 8px 4px}
+.profielmenu button{display:flex;align-items:center;gap:8px;width:100%;text-align:left;border:0;background:none;color:var(--ink);padding:8px;border-radius:8px;cursor:pointer;font-size:12.5px}
+.profielmenu button:hover{background:var(--paper-dim)}
+.profielmenu button .e{color:var(--ink-soft);font-size:11px;margin-left:auto}
+.profielmenu button.aan{background:color-mix(in srgb,var(--acc) 12%,transparent)}
+.alsbalk{margin-top:14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:9px 12px;border-radius:10px;background:color-mix(in srgb,var(--warn) 14%,transparent);border-left:3px solid var(--warn);font-size:12.5px}
 .kop{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
 .kop .merk{font-size:20px}
 .kop .rechts{margin-left:auto;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .wie{font-size:12.5px;color:var(--ink-soft)} .wie b{color:var(--ink)}
 .rolpil{font:800 9.5px var(--body);text-transform:uppercase;letter-spacing:.8px;padding:2px 7px;border-radius:99px;background:var(--paper-dim);color:var(--ink-soft)}
 .rolpil.admin{background:color-mix(in srgb,var(--acc) 16%,transparent);color:var(--acc-deep)}
-h2{font:800 11px var(--body);text-transform:uppercase;letter-spacing:1.4px;color:var(--ink-soft);margin:28px 0 10px}
+h2{font:800 11px var(--body);text-transform:uppercase;letter-spacing:1.4px;color:var(--ink-soft);margin:0}
 .tegels{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
 .tegel{background:var(--card);border:1px solid var(--hairline);border-radius:14px;padding:16px 16px 14px;cursor:pointer;text-align:left;color:var(--ink);display:flex;flex-direction:column;gap:6px;min-height:120px;transition:border-color .15s, transform .15s}
 .tegel:hover{border-color:var(--acc);transform:translateY(-1px)}
@@ -71,9 +109,8 @@ h2{font:800 11px var(--body);text-transform:uppercase;letter-spacing:1.4px;color
 .tegel .v .nu{color:var(--ok);font-weight:700}
 .badge{font:800 9.5px var(--body);text-transform:uppercase;letter-spacing:.7px;padding:2px 7px;border-radius:99px;background:var(--paper-dim);color:var(--ink-soft);align-self:flex-start}
 /* ---------- beheer ---------- */
-.paneel{background:var(--card);border:1px solid var(--hairline);border-radius:14px;padding:16px;margin-top:10px}
-.beheer{display:grid;grid-template-columns:minmax(0,3fr) minmax(0,2fr);gap:12px}
-@media (max-width:860px){ .beheer{grid-template-columns:1fr} }
+.paneel{background:var(--card);border:1px solid var(--hairline);border-radius:14px;padding:16px}
+.paneel .tabelwrap{overflow-x:auto}
 #teamtabel td:nth-child(2){word-break:break-all}
 table{width:100%;border-collapse:collapse;font-size:12.5px}
 td,th{padding:6px 8px;border-bottom:1px solid var(--hairline);text-align:left;vertical-align:middle}
@@ -89,6 +126,7 @@ th{font:800 9.5px var(--body);text-transform:uppercase;letter-spacing:.8px;color
 #laden{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px;background:var(--canvas);z-index:5}
 #laden b{font:700 18px var(--display)}
 #laden span{font-size:12.5px;color:var(--ink-soft)}
+@media (max-width:860px){ .blok{width:100% !important} .rsz,.pgr{display:none} }
 @media (max-width:560px){ .kop .rechts{margin-left:0} }
 </style>
 </head>
@@ -109,38 +147,38 @@ th{font:800 9.5px var(--body);text-transform:uppercase;letter-spacing:.8px;color
 
 <!-- hoofdmenu -->
 <div id="menu" class="verborgen">
+  <i class="pgr l" data-pgr="l" title="sleep om de paginabreedte aan te passen"></i><i class="pgr r" data-pgr="r" title="sleep om de paginabreedte aan te passen"></i>
   <div class="kop">
     <p class="merk">Taxatietooling</p>
-    <div class="rechts"><span class="wie" id="wie"></span><button class="knop klein" id="uitlog">Uitloggen</button></div>
+    <div class="rechts">
+      <div class="profiel"><button class="profielknop" id="wie"></button><div class="profielmenu" id="profielmenu"></div></div>
+      <button class="knop klein" id="indeling" title="volgorde en breedtes van de onderdelen terugzetten">↺ indeling</button>
+      <button class="knop klein" id="thema" title="licht of donker">◑ Donker</button>
+      <button class="knop klein" id="uitlog">Uitloggen</button>
+    </div>
   </div>
-  <h2>Tools</h2>
-  <div class="tegels" id="tools"></div>
-  <div id="klantblok" class="verborgen">
-    <h2 id="klantkop">Klanten</h2>
-    <div class="tegels" id="klanten"></div>
-  </div>
-  <div id="beheerblok" class="verborgen">
-    <h2>Beheer</h2>
-    <div class="beheer">
-      <div class="paneel"><b>Team</b>
-        <table id="teamtabel"></table>
+  <div class="alsbalk verborgen" id="alsbalk"></div>
+  <div class="blokken" id="blokken">
+    <section class="blok" data-blok="tools"><header><span class="greep" title="sleep om te verplaatsen">⠿</span><h2>Tools</h2></header>
+      <div class="tegels" id="tools"></div><i class="rsz" title="sleep om de breedte aan te passen"></i></section>
+    <section class="blok verborgen" data-blok="klanten" id="klantblok"><header><span class="greep" title="sleep om te verplaatsen">⠿</span><h2 id="klantkop">Klanten</h2></header>
+      <div class="tegels" id="klanten"></div><i class="rsz" title="sleep om de breedte aan te passen"></i></section>
+    <section class="blok beheer verborgen" data-blok="team"><header><span class="greep" title="sleep om te verplaatsen">⠿</span><h2>Team</h2></header>
+      <div class="paneel"><div class="tabelwrap"><table id="teamtabel"></table></div>
         <div class="rij"><input id="t-naam" placeholder="naam"><input id="t-email" placeholder="mailadres" type="email"><select id="t-rol"><option value="taxateur">taxateur</option><option value="admin">admin</option></select><button class="knop klein prim" id="t-toe">Toevoegen</button></div>
         <p class="klein" style="margin:8px 0 0">Er wordt geen mail verstuurd. Stuur zelf de link en de teamcode. Uitzetten = direct geen toegang meer.</p>
-        <div id="t-msg"></div>
-      </div>
+        <div id="t-msg"></div></div><i class="rsz" title="sleep om de breedte aan te passen"></i></section>
+    <section class="blok beheer verborgen" data-blok="code"><header><span class="greep" title="sleep om te verplaatsen">⠿</span><h2>Teamcode &amp; back-up</h2></header>
       <div class="paneel"><b>Teamcode</b>
         <div class="rij"><input id="c-nieuw" type="password" placeholder="nieuwe teamcode (min. 8 tekens)" autocomplete="new-password"><button class="knop klein prim" id="c-zet">Wijzigen</button></div>
         <p class="klein" style="margin:8px 0 0">Wie al is ingelogd, blijft ingelogd. Nieuwe computers hebben de nieuwe code nodig.</p>
         <div id="c-msg"></div>
         <div style="margin-top:16px"><b>Back-up</b>
           <p class="klein" style="margin:4px 0 8px">Alle keuzes, instellingen, team en logboek als één bestand (gratis Supabase maakt zelf geen back-ups).</p>
-          <button class="knop klein" id="backup">⤓ Download back-up</button><span id="b-msg" class="klein" style="margin-left:8px"></span></div>
-      </div>
-      <div class="paneel" style="grid-column:1/-1"><b>Logboek</b> <span class="klein">laatste 60 wijzigingen</span>
-        <select id="logklant" style="margin-left:10px;padding:4px 8px;border:1px solid var(--hair2);border-radius:7px;background:var(--paper);color:var(--ink)"><option value="">alle klanten</option></select>
-        <table class="log" id="logtabel"></table>
-      </div>
-    </div>
+          <button class="knop klein" id="backup">⤓ Download back-up</button><span id="b-msg" class="klein" style="margin-left:8px"></span></div></div><i class="rsz" title="sleep om de breedte aan te passen"></i></section>
+    <section class="blok beheer verborgen" data-blok="log"><header><span class="greep" title="sleep om te verplaatsen">⠿</span><h2>Logboek</h2><span class="klein">laatste 60 wijzigingen</span>
+        <select id="logklant" style="margin-left:6px;padding:4px 8px;border:1px solid var(--hair2);border-radius:7px;background:var(--paper);color:var(--ink)"><option value="">alle klanten</option></select></header>
+      <div class="paneel"><div class="tabelwrap"><table class="log" id="logtabel"></table></div></div><i class="rsz" title="sleep om de breedte aan te passen"></i></section>
   </div>
 </div>
 
@@ -156,6 +194,15 @@ const toon = (...ids) => { for (const id of ['laden', 'inlog', 'menu', 'toolwrap
 const tijd = op => { if (!op) return ''; const s = (Date.now() - new Date(op)) / 1000; return s < 60 ? 'zojuist' : s < 3600 ? Math.round(s / 60) + ' min geleden' : s < 86400 ? Math.round(s / 3600) + ' uur geleden' : new Date(op).toLocaleDateString('nl-NL', {day: 'numeric', month: 'short', year: 'numeric'}); };
 const nl = (v, d = 0) => v == null ? '–' : Number(v).toLocaleString('nl-NL', {minimumFractionDigits: d, maximumFractionDigits: d});
 const IK = {email: null, naam: null, admin: false};
+let ALS = null;   /* beheerder bekijkt het dashboard als een collega (rol en naam), wijzigingen blijven op naam van de beheerder */
+const EFF = () => ALS ? {naam: ALS.naam || ALS.email, admin: ALS.rol === 'admin', email: ALS.email} : IK;
+const LSH = {get(k, d){ try{ const v = localStorage.getItem('tt_hub_' + k); return v == null ? d : JSON.parse(v); }catch(e){ return d; } }, set(k, v){ try{ localStorage.setItem('tt_hub_' + k, JSON.stringify(v)); }catch(e){} }};
+/* ---------- licht / donker ---------- */
+function zetThema(t){ if (t) document.documentElement.dataset.theme = t; else delete document.documentElement.dataset.theme;
+  const donker = t ? t === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches; $('thema').textContent = donker ? '◐ Licht' : '◑ Donker'; }
+zetThema(LSH.get('thema', null));
+$('thema').addEventListener('click', () => { const donker = document.documentElement.dataset.theme ? document.documentElement.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+  const t = donker ? 'light' : 'dark'; LSH.set('thema', t); zetThema(t); });
 let TEAM = [], TOOLS = [], KLANTEN = [], DATASETS = [], KEUZETEL = {}, GEKOZEN = null;
 /* binnenkort: tools die nog op het platform komen (alleen ter oriëntatie) */
 const BINNENKORT = [['BOG · MOG · ZOG', 'Markthuren niet-wonen getoetst aan brainbay-referenties'], ['Controletool marktwaarde wonen', 'Taxatiecontrole en parameterlab'], ['Bollengrafiek', 'Beleggingsreferenties wonen'], ['Disconteringsvoet', 'Opbouw DE/UP per complex']];
@@ -193,7 +240,7 @@ async function naInloggen(){
   const mij = TEAM.find(x => x.email === IK.email);
   if (!mij || !mij.actief){ await sb.auth.signOut(); toon('inlog'); $('inlogmsg').innerHTML = '<div class="melding fout">Dit mailadres heeft (nog) geen toegang. Vraag Jesper.</div>'; return; }
   IK.naam = mij.naam || IK.email; IK.admin = mij.rol === 'admin';
-  $('wie').innerHTML = `<b>${esc(IK.naam)}</b> <span class="rolpil${IK.admin ? ' admin' : ''}">${IK.admin ? 'beheerder' : 'taxateur'}</span>`;
+  renderWie(); pasIndelingToe();
   await laadMenu();
   const h = decodeURIComponent(location.hash.slice(1)).split('/');
   if (h[0] && h[1]){ const tool = TOOLS.find(x => x.code === h[0]); if (tool) return openTool(tool, h[1]); }
@@ -211,32 +258,32 @@ async function laadMenu(){
   KEUZETEL = {}; for (const r of d.data || []){ const k = KEUZETEL[r.klant_code] || (KEUZETEL[r.klant_code] = {n: 0, op: null, tb: 0, ak: 0});
     if (r.status === 'ter_beoordeling') k.tb++; if (r.status === 'akkoord') k.ak++;
     if (!(r.inst && Object.keys(r.inst).length) && !r.voorstel && !r.toelichting) continue; k.n++; if (!k.op || r.op > k.op) k.op = r.op; }
-  if (!GEKOZEN && TOOLS.length === 1) GEKOZEN = TOOLS[0].code;   /* één tool: klanten meteen tonen */
   renderTools();
-  if (GEKOZEN) renderKlanten(GEKOZEN);
-  $('beheerblok').classList.toggle('verborgen', !IK.admin);
-  if (IK.admin) renderBeheer();
+  if (GEKOZEN) renderKlanten(GEKOZEN); else { $('klantblok').classList.add('verborgen'); stopOnline(); }
+  document.querySelectorAll('.blok.beheer').forEach(b => b.classList.toggle('verborgen', !EFF().admin));
+  if (EFF().admin) renderBeheer();
 }
 function renderTools(){
   $('tools').innerHTML = TOOLS.map(t => { const n = new Set(DATASETS.filter(d => d.tool_code === t.code).map(d => d.klant_code)).size;
     return `<button class="tegel${GEKOZEN === t.code ? ' aan' : ''}" data-tool="${esc(t.code)}"><span class="t">${esc(t.naam)}</span><span class="o">${esc(t.omschrijving || '')}</span><span class="v"><span>${n} klant${n === 1 ? '' : 'en'}</span></span></button>`; }).join('')
     + BINNENKORT.map(([n, o]) => `<div class="tegel binnenkort"><span class="badge">binnenkort</span><span class="t">${esc(n)}</span><span class="o">${esc(o)}</span></div>`).join('');
-  $('tools').querySelectorAll('[data-tool]').forEach(b => b.onclick = () => { GEKOZEN = b.dataset.tool; renderTools(); renderKlanten(GEKOZEN); });
+  $('tools').querySelectorAll('[data-tool]').forEach(b => b.onclick = () => { GEKOZEN = GEKOZEN === b.dataset.tool ? null : b.dataset.tool; renderTools();
+    if (GEKOZEN) renderKlanten(GEKOZEN); else { $('klantblok').classList.add('verborgen'); stopOnline(); } });
 }
 function renderKlanten(code){
   const tool = TOOLS.find(t => t.code === code); if (!tool) return;
   $('klantblok').classList.remove('verborgen'); $('klantkop').textContent = tool.naam + ' · kies een klant';
   const laatste = {}; for (const d of DATASETS) if (d.tool_code === code && !laatste[d.klant_code]) laatste[d.klant_code] = d;
-  const lijst = KLANTEN.filter(k => laatste[k.code] || IK.admin);
+  const ADM = EFF().admin, lijst = KLANTEN.filter(k => laatste[k.code] || ADM);
   $('klanten').innerHTML = lijst.map(k => { const d = laatste[k.code], kz = KEUZETEL[k.code];
     return `<button class="tegel" data-klant="${esc(k.code)}"><span class="t">${esc(k.naam)}</span>
       <span class="o">${d ? 'Data ' + esc(d.snapshot) + (d.meta && d.meta.vhe ? ' · ' + nl(d.meta.vhe) + ' eenheden' : '') : '<i>nog geen data gepubliceerd</i>'}</span>
       <span class="v">${d ? `<span>gepubliceerd ${esc(tijd(d.op))}</span>` : ''}${kz && kz.n ? `<span>${kz.n} aanpassing${kz.n === 1 ? '' : 'en'} · laatst ${esc(tijd(kz.op))}</span>` : ''}</span>
       ${kz && (kz.tb || kz.ak) ? `<span class="v">${kz.tb ? `<span class="stpil tb">${kz.tb} ter beoordeling</span>` : ''}${kz.ak ? `<span class="stpil ak">${kz.ak} akkoord</span>` : ''}</span>` : ''}
       <span class="v online" id="online-${esc(k.code)}"></span>
-      ${IK.admin && d ? `<span class="tegelactie" data-dataklant="${esc(k.code)}" title="tool openen in Data &amp; import om nieuwe data in te lezen en te publiceren">⇪ data bijwerken</span>` : ''}</button>`; }).join('')
-    + (IK.admin ? '<button class="tegel nieuw" id="nieuweklant">+ Nieuwe klant</button>' : '')
-    + (!lijst.length && !IK.admin ? '<p class="klein">Nog geen klanten met data voor deze tool.</p>' : '');
+      ${ADM && d ? `<span class="tegelactie" data-dataklant="${esc(k.code)}" title="tool openen in Data &amp; import om nieuwe data in te lezen en te publiceren">⇪ data bijwerken</span>` : ''}</button>`; }).join('')
+    + (ADM ? '<button class="tegel nieuw" id="nieuweklant">+ Nieuwe klant</button>' : '')
+    + (!lijst.length && !ADM ? '<p class="klein">Nog geen klanten met data voor deze tool.</p>' : '');
   $('klanten').querySelectorAll('[data-klant]').forEach(b => b.onclick = e => openTool(tool, b.dataset.klant, e.target.closest('[data-dataklant]') ? 'data' : null));
   if ($('nieuweklant')) $('nieuweklant').onclick = async () => {
     const naam = prompt('Naam van de klant (bv. Wonen Zuid):'); if (!naam) return;
@@ -245,9 +292,63 @@ function renderKlanten(code){
     const r = await sb.from('klanten').insert({code, naam}); if (r.error) return alert('Toevoegen mislukt: ' + r.error.message);
     await laadMenu(); renderKlanten(GEKOZEN);
   };
-  $('klantblok').scrollIntoView({behavior: 'smooth', block: 'nearest'});
+  $('klantblok').scrollIntoView({behavior: 'smooth', block: 'nearest'}); pasIndelingToe();
   volgOnline(code, lijst.map(k => k.code));
 }
+
+/* ---------- profiel: beheerder kan het dashboard bekijken als een collega ---------- */
+function renderWie(){
+  const e = EFF(), k = $('wie');
+  k.innerHTML = `<b>${esc(IK.naam)}</b>${ALS ? ` <span class="klein">als</span> <b>${esc(e.naam)}</b>` : ''} <span class="rolpil${e.admin ? ' admin' : ''}">${e.admin ? 'beheerder' : 'taxateur'}</span>${IK.admin ? ' ▾' : ''}`;
+  k.classList.toggle('kan', IK.admin); k.title = IK.admin ? 'bekijk het dashboard zoals een collega het ziet' : '';
+  const b = $('alsbalk'); b.classList.toggle('verborgen', !ALS);
+  if (ALS) b.innerHTML = `<span>👁 Je bekijkt het dashboard zoals <b>${esc(e.naam)}</b> het ziet (${e.admin ? 'beheerder' : 'taxateur'}). Wat je wijzigt, staat in het logboek op jouw naam.</span><button class="knop klein" id="alsstop">terug naar mezelf</button>`;
+  if ($('alsstop')) $('alsstop').onclick = () => zetAls(null);
+}
+function zetAls(email){ ALS = email && email !== IK.email ? TEAM.find(t => t.email === email) || null : null; $('profielmenu').classList.remove('open'); renderWie(); laadMenu(); }
+$('wie').addEventListener('click', e => { if (!IK.admin) return; e.stopPropagation(); const m = $('profielmenu');
+  m.innerHTML = '<div class="kopje">Bekijk het dashboard als</div>' + TEAM.filter(t => t.actief).map(t => `<button data-als="${esc(t.email)}" class="${(ALS ? ALS.email : IK.email) === t.email ? 'aan' : ''}"><b>${esc(t.naam || t.email)}</b>${t.email === IK.email ? ' <span class="klein">(jij)</span>' : ''}<span class="e">${esc(t.rol)}</span></button>`).join('');
+  m.querySelectorAll('[data-als]').forEach(x => x.onclick = () => zetAls(x.dataset.als)); m.classList.toggle('open'); });
+document.addEventListener('click', e => { if (!e.target.closest('.profiel')) $('profielmenu').classList.remove('open'); });
+
+/* ---------- indeling: volgorde en breedte per blok, paginabreedte (per computer) ---------- */
+const LAY_STD = {volg: ['tools', 'klanten', 'team', 'code', 'log'], w: {tools: 100, klanten: 100, team: 60, code: 40, log: 100}, pagina: 1560};
+let LAY = Object.assign(JSON.parse(JSON.stringify(LAY_STD)), LSH.get('indeling', {}));
+function pasIndelingToe(){
+  const c = $('blokken'), bl = [...c.children], volg = LAY.volg.concat(bl.map(b => b.dataset.blok).filter(x => !LAY.volg.includes(x)));
+  for (const id of volg){ const b = bl.find(x => x.dataset.blok === id); if (b) c.appendChild(b); }
+  for (const b of bl) b.style.setProperty('--w', LAY.w[b.dataset.blok] || 100);
+  document.documentElement.style.setProperty('--menuW', LAY.pagina + 'px');
+}
+function bewaarIndeling(){ LAY.volg = [...$('blokken').children].map(b => b.dataset.blok); LSH.set('indeling', LAY); }
+$('indeling').addEventListener('click', () => { LAY = JSON.parse(JSON.stringify(LAY_STD)); LSH.set('indeling', LAY); pasIndelingToe(); });
+let LABEL = null;
+const toonLabel = (x, y, t) => { if (!LABEL){ LABEL = document.createElement('div'); LABEL.className = 'breedtelabel'; document.body.appendChild(LABEL); } LABEL.style.left = (x + 12) + 'px'; LABEL.style.top = (y + 12) + 'px'; LABEL.textContent = t; };
+const weglabel = () => { if (LABEL){ LABEL.remove(); LABEL = null; } };
+document.addEventListener('pointerdown', e => {
+  /* blok verslepen aan de greep */
+  const g = e.target.closest('.greep');
+  if (g){ e.preventDefault(); const blok = g.closest('.blok'); blok.classList.add('sleept'); document.body.classList.add('sleept-blok'); let doel = null, na = false;
+    const mv = ev => { document.querySelectorAll('.doel-voor,.doel-na').forEach(x => x.classList.remove('doel-voor', 'doel-na'));
+      const o = document.elementFromPoint(ev.clientX, ev.clientY), b = o && o.closest('.blok'); doel = b && b !== blok ? b : null;
+      if (doel){ const r = doel.getBoundingClientRect(); na = ev.clientX > r.left + r.width / 2; doel.classList.add(na ? 'doel-na' : 'doel-voor'); } };
+    const up = () => { removeEventListener('pointermove', mv); removeEventListener('pointerup', up); blok.classList.remove('sleept'); document.body.classList.remove('sleept-blok');
+      document.querySelectorAll('.doel-voor,.doel-na').forEach(x => x.classList.remove('doel-voor', 'doel-na'));
+      if (doel){ doel.parentNode.insertBefore(blok, na ? doel.nextSibling : doel); bewaarIndeling(); } };
+    addEventListener('pointermove', mv); addEventListener('pointerup', up); return; }
+  /* breedte van een blok */
+  const r = e.target.closest('.rsz');
+  if (r){ e.preventDefault(); const blok = r.closest('.blok'), id = blok.dataset.blok, cw = $('blokken').getBoundingClientRect().width, x0 = e.clientX, w0 = LAY.w[id] || 100; r.classList.add('actief'); document.body.classList.add('trekt');
+    const mv = ev => { let w = Math.round((w0 + (ev.clientX - x0) / cw * 100) / 5) * 5; w = Math.max(20, Math.min(100, w)); LAY.w[id] = w; blok.style.setProperty('--w', w); toonLabel(ev.clientX, ev.clientY, w + '%'); };
+    const up = () => { removeEventListener('pointermove', mv); removeEventListener('pointerup', up); r.classList.remove('actief'); document.body.classList.remove('trekt'); weglabel(); bewaarIndeling(); };
+    addEventListener('pointermove', mv); addEventListener('pointerup', up); return; }
+  /* paginabreedte aan de randen */
+  const p = e.target.closest('.pgr');
+  if (p){ e.preventDefault(); const x0 = e.clientX, w0 = $('menu').getBoundingClientRect().width, kant = p.dataset.pgr === 'r' ? 1 : -1; p.classList.add('actief'); document.body.classList.add('trekt');
+    const mv = ev => { const w = Math.max(760, Math.min(innerWidth, Math.round(w0 + 2 * kant * (ev.clientX - x0)))); LAY.pagina = w; document.documentElement.style.setProperty('--menuW', w + 'px'); toonLabel(ev.clientX, ev.clientY, w + ' px'); };
+    const up = () => { removeEventListener('pointermove', mv); removeEventListener('pointerup', up); p.classList.remove('actief'); document.body.classList.remove('trekt'); weglabel(); bewaarIndeling(); };
+    addEventListener('pointermove', mv); addEventListener('pointerup', up); }
+});
 
 /* ---------- wie is waar (aanwezigheid per klant; het hoofdmenu kijkt mee zonder zelf mee te tellen) ---------- */
 let ONLINE_KAN = [];
@@ -283,14 +384,15 @@ async function openTool(tool, klantCode, startView = null){
   toon('laden'); $('ladentekst').textContent = `${tool.naam} · ${klant.naam} wordt geladen…`; stopOnline();
   try{
     let ds = DATASETS.find(d => d.tool_code === tool.code && d.klant_code === klantCode), leeg = false;
-    if (!ds){ if (!IK.admin) throw new Error('Voor deze klant is nog geen data gepubliceerd.'); ds = DATASETS.find(d => d.tool_code === tool.code); leeg = true;
+    if (!ds){ if (!EFF().admin) throw new Error('Voor deze klant is nog geen data gepubliceerd.'); ds = DATASETS.find(d => d.tool_code === tool.code); leeg = true;
       if (!ds) throw new Error('Er is nog geen basisdataset voor deze tool.'); }
     const [{data: lijst}, gz] = await Promise.all([sb.storage.from('apps').list(tool.code), haal('data', ds.bestand, false)]);
     /* app-versie: altijd de nieuwste (cache op pad + tijdstempel van het bestand) */
     const app = (lijst || []).find(f => f.name === tool.app_pad.split('/').pop());
     if (!app) throw new Error('De toolcode staat nog niet klaar.');
     const html = await haal('apps', tool.app_pad, true, app.updated_at || app.created_at || '');
-    window.__TT = {sb, klant: klantCode, klantNaam: klant.naam, datasetId: leeg ? null : ds.id, gz, email: IK.email, admin: IK.admin, team: TEAM, leeg, startView};
+    window.__TT = {sb, klant: klantCode, klantNaam: klant.naam, datasetId: leeg ? null : ds.id, gz, email: IK.email, admin: EFF().admin, team: TEAM, leeg, startView,
+      thema: document.documentElement.dataset.theme || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'), alsNaam: ALS ? EFF().naam : null};
     location.hash = encodeURIComponent(tool.code) + '/' + encodeURIComponent(klantCode);
     const w = $('toolwrap'); w.innerHTML = ''; const f = document.createElement('iframe'); f.title = tool.naam; const u = URL.createObjectURL(new Blob([html], {type: 'text/html'})); f.src = u; f.onload = () => setTimeout(() => URL.revokeObjectURL(u), 5000); w.appendChild(f);
     toon('toolwrap'); document.title = `${klant.naam} · ${tool.naam}`;

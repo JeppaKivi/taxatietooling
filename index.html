@@ -185,8 +185,12 @@ th{font:800 9.5px var(--body);text-transform:uppercase;letter-spacing:.8px;color
         <div class="rij"><input id="c-nieuw" type="password" placeholder="nieuwe teamcode (min. 8 tekens)" autocomplete="new-password"><button class="knop klein prim" id="c-zet">Wijzigen</button></div>
         <p class="klein" style="margin:8px 0 0">Wie al is ingelogd, blijft ingelogd. Nieuwe computers hebben de nieuwe code nodig.</p>
         <div id="c-msg"></div>
+        <div style="margin-top:16px"><b>Beheerderscode</b> <span id="a-status" class="klein"></span>
+          <p class="klein" style="margin:4px 0 8px">Je eigen inlogcode als beheerder. Zodra die is ingesteld, werkt de teamcode niet meer voor beheerders — zo kan niemand met de teamcode als jou inloggen. Bewaar hem goed (wachtwoordmanager).</p>
+          <div class="rij"><input id="a-nieuw" type="password" placeholder="beheerderscode (min. 10 tekens)" autocomplete="new-password"><button class="knop klein prim" id="a-zet">Instellen</button></div>
+          <div id="a-msg"></div></div>
         <div style="margin-top:16px"><b>Back-up</b>
-          <p class="klein" style="margin:4px 0 8px">Alle keuzes, instellingen, team en logboek als één bestand (gratis Supabase maakt zelf geen back-ups).</p>
+          <p class="klein" style="margin:4px 0 8px">Alle beoordelingen, opmerkingen, instellingen, weergaven, team en logboek als één bestand (gratis Supabase maakt zelf geen back-ups).</p>
           <button class="knop klein" id="backup">⤓ Download back-up</button><span id="b-msg" class="klein" style="margin-left:8px"></span></div></div><i class="rsz" title="sleep om de breedte aan te passen"></i></section>
     <section class="blok beheer verborgen" data-blok="toolsbeheer"><header><span class="greep" title="sleep om te verplaatsen">⠿</span><h2>Tools beheren</h2></header>
       <div class="paneel"><div class="tabelwrap"><table id="tooltabel"></table></div>
@@ -281,7 +285,7 @@ async function laadMenu(){
   renderTools();
   if (GEKOZEN) renderKlanten(GEKOZEN); else { $('klantblok').classList.add('verborgen'); stopOnline(); }
   document.querySelectorAll('.blok.beheer').forEach(b => b.classList.toggle('verborgen', !EFF().admin));
-  if (EFF().admin) renderBeheer();
+  if (EFF().admin){ renderBeheer(); laadCodeStatus(); }
 }
 function renderTools(){
   $('tools').innerHTML = TOOLS.map(t => { const n = new Set(DATASETS.filter(d => d.tool_code === t.code && d.klant_code !== 'algemeen').map(d => d.klant_code)).size, kl = t.instellingen && t.instellingen.klantloos;
@@ -571,6 +575,23 @@ $('c-zet').addEventListener('click', async () => {
   $('c-msg').innerHTML = r.ok ? '<div class="melding ok">Teamcode gewijzigd.</div>' : `<div class="melding fout">${esc(j.fout || 'mislukt')}</div>`;
   if (r.ok) $('c-nieuw').value = '';
 });
+async function toegangPost(body){
+  const {data: s} = await sb.auth.getSession(); if (!s || !s.session) return {ok: false, j: {fout: 'niet ingelogd'}};
+  const r = await fetch(SB_URL + '/functions/v1/toegang', {method: 'POST', headers: {'Content-Type': 'application/json', apikey: SB_KEY, Authorization: 'Bearer ' + s.session.access_token}, body: JSON.stringify(body)});
+  return {ok: r.ok, j: await r.json().catch(() => ({}))};
+}
+async function laadCodeStatus(){
+  const el = $('a-status'); if (!el) return;
+  try{ const {ok, j} = await toegangPost({actie: 'status'}); if (!ok) { el.textContent = ''; return; }
+    el.innerHTML = j.admincode ? '<span style="color:#2e7d32">✓ ingesteld</span>' : '<span style="color:#c62828">⚠ nog niet ingesteld — de teamcode werkt nu ook voor jou</span>';
+  }catch(e){ el.textContent = ''; }
+}
+$('a-zet').addEventListener('click', async () => {
+  const code = $('a-nieuw').value; if (code.length < 10) return $('a-msg').innerHTML = '<div class="melding fout">Minimaal 10 tekens.</div>';
+  const {ok, j} = await toegangPost({actie: 'admincode', code});
+  $('a-msg').innerHTML = ok ? '<div class="melding ok">Beheerderscode ingesteld. Log voortaan in met je mailadres en deze code.</div>' : `<div class="melding fout">${esc(j.fout || 'mislukt')}</div>`;
+  if (ok){ $('a-nieuw').value = ''; laadCodeStatus(); }
+});
 function logOpen(){ try{ return localStorage.getItem('tt_log_open') === '1'; }catch(e){ return false; } }
 function zetLogKlap(){ const b = $('logblok'); if (!b) return; const open = logOpen(); b.classList.toggle('dicht', !open); const c = b.querySelector('.klapcaret'); if (c) c.textContent = open ? '▾' : '▸'; }
 async function laadLog(){
@@ -597,7 +618,7 @@ $('logklant').addEventListener('change', laadLog);
 $('logkop').addEventListener('click', () => { try{ localStorage.setItem('tt_log_open', logOpen() ? '0' : '1'); }catch(e){} laadLog(); });
 $('backup').addEventListener('click', async () => {
   $('b-msg').textContent = 'bezig…';
-  const tabellen = ['team', 'klanten', 'tools', 'datasets', 'mt_keuzes', 'mt_instellingen', 'weergaven', 'logboek'], uit = {gemaakt: new Date().toISOString()};
+  const tabellen = ['team', 'klanten', 'tools', 'datasets', 'tool_keuzes', 'tool_instellingen', 'mt_keuzes', 'mt_instellingen', 'weergaven', 'logboek'], uit = {gemaakt: new Date().toISOString()};
   for (const t of tabellen){ let rijen = [], van = 0; for (;;){ const {data, error} = await sb.from(t).select('*').range(van, van + 999); if (error){ $('b-msg').textContent = t + ': ' + error.message; return; } rijen = rijen.concat(data); if (data.length < 1000) break; van += 1000; } uit[t] = rijen; }
   const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(uit, null, 1)], {type: 'application/json'}));
   a.download = `taxatietooling_backup_${new Date().toISOString().slice(0, 10)}.json`; a.click(); $('b-msg').textContent = '✓ gedownload';

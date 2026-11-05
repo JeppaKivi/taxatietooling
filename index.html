@@ -458,6 +458,11 @@ function maakApi(tool, klant, ds, bytes){
     /* datapakket van deze klant (laatst gepubliceerd) */
     pakket: ds ? {id: ds.id, snapshot: ds.snapshot, bestand: ds.bestand, meta: ds.meta || {}, op: ds.op, door: ds.door} : null,
     bytes: () => bytes,
+    /* eerdere publicaties van deze klant × tool (nieuwste eerst) en een daarvan ophalen */
+    async pakketten(){ return DATASETS.filter(d => d.tool_code === T && d.klant_code === K).map(d => ({id: d.id, op: d.op, bytes: d.bytes, snapshot: d.snapshot, meta: d.meta || {}})); },
+    async jsonVan(id){ const d = DATASETS.find(x => x.id === id && x.tool_code === T && x.klant_code === K); if (!d) return null;
+      const b = await haal('data', d.bestand, false, d.op); const st = /\.gz$/.test(d.bestand) ? new Blob([b]).stream().pipeThrough(new DecompressionStream('gzip')) : new Blob([b]).stream();
+      return JSON.parse(await new Response(st).text()); },
     async json(){ if (!bytes) return null; const st = /\.gz$/.test(ds.bestand) ? new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip')) : new Blob([bytes]).stream(); return JSON.parse(await new Response(st).text()); },
     /* keuzes per object (data = vrij object; per hoofdveld samengevoegd; null = veld wissen) */
     async keuzes(){ const {data, error} = await sb.from('tool_keuzes').select('*').eq('tool_code', T).eq('klant_code', K); if (error) fout(error); return data; },

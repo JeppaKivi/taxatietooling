@@ -310,7 +310,7 @@ function renderKlanten(code){
   const tool = TOOLS.find(t => t.code === code); if (!tool) return;
   $('klantblok').classList.remove('verborgen'); $('klantkop').textContent = tool.naam + ' · kies een klant';
   const laatste = {}; for (const d of DATASETS) if (d.tool_code === code && !laatste[d.klant_code]) laatste[d.klant_code] = d;
-  const ADM = EFF().admin, lijst = KLANTEN.filter(k => laatste[k.code] || ADM);
+  const ADM = EFF().admin, lijst = KLANTEN.filter(k => laatste[k.code]);  // alleen klanten met data voor deze tool (ook voor de beheerder)
   $('klanten').innerHTML = lijst.map(k => { const d = laatste[k.code], kz = (KEUZETEL[code] || {})[k.code];
     return `<button class="tegel" data-klant="${esc(k.code)}"><span class="t">${esc(k.naam)}</span>
       ${klantRegel(d)}
@@ -322,11 +322,18 @@ function renderKlanten(code){
     + (!lijst.length && !ADM ? '<p class="klein">Nog geen klanten met data voor deze tool.</p>' : '');
   $('klanten').querySelectorAll('[data-klant]').forEach(b => b.onclick = e => openTool(tool, b.dataset.klant, e.target.closest('[data-dataklant]') ? 'data' : null));
   if ($('nieuweklant')) $('nieuweklant').onclick = async () => {
-    const naam = prompt('Naam van de klant (bv. Wonen Zuid):'); if (!naam) return;
+    const naam = (prompt('Naam van de klant (bv. Wonen Zuid):') || '').trim(); if (!naam) return;
     const voorstel = naam.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
-    const code = (prompt('Korte code (kleine letters, cijfers, _):', voorstel) || '').trim(); if (!code) return;
-    const r = await sb.from('klanten').insert({code, naam}); if (r.error) return alert('Toevoegen mislukt: ' + r.error.message);
-    await laadMenu(); renderKlanten(GEKOZEN);
+    // bestaat de klant al (bv. bij een andere tool)? dan die gebruiken, anders aanmaken
+    let bestaand = KLANTEN.find(k => k.code === voorstel || k.naam.trim().toLowerCase() === naam.toLowerCase()), code;
+    if (bestaand) code = bestaand.code;
+    else {
+      code = (prompt('Korte code (kleine letters, cijfers, _):', voorstel) || '').trim(); if (!code) return;
+      const r = await sb.from('klanten').insert({code, naam}); if (r.error) return alert('Toevoegen mislukt: ' + r.error.message);
+      await laadMenu();
+    }
+    // direct de tool openen om data in te laden; de tegel verschijnt zodra er gepubliceerd is
+    openTool(tool, code, 'data');
   };
   $('klantblok').scrollIntoView({behavior: 'smooth', block: 'nearest'}); pasIndelingToe();
   volgOnline(code, lijst.map(k => k.code));

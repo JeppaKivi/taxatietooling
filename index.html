@@ -138,7 +138,47 @@ th{font:800 9.5px var(--body);text-transform:uppercase;letter-spacing:.8px;color
 #laden{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px;background:var(--canvas);z-index:5}
 #laden b{font:700 18px var(--display)}
 #laden span{font-size:12.5px;color:var(--ink-soft)}
-@media (max-width:860px){ .blok{width:100% !important} .rsz,.pgr{display:none} }
+/* ---------- ontwerp C: merkband ---------- */
+:root{--band:#154473; --band-ink:#fff; --band-soft:rgba(255,255,255,.74); --band-line:rgba(255,255,255,.24); --band-fill:rgba(255,255,255,.09)}
+:root[data-theme="dark"]{--band:#0E2E50}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){--band:#0E2E50} }
+#menu{max-width:none;padding:0;margin:0}
+.binnen{max-width:var(--menuW,1560px);margin:0 auto;padding:0 28px;position:relative}
+.band{background:var(--band);color:var(--band-ink);padding:22px 0 96px}
+.band .kop .merk{font:700 18px var(--display);color:var(--band-ink)}
+.logo{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font:800 13px var(--display);letter-spacing:.5px;background:var(--band-fill);border:1px solid var(--band-line);color:var(--band-ink)}
+.band .knop{background:var(--band-fill);border-color:var(--band-line);color:var(--band-ink);border-radius:99px}
+.band .knop:hover{border-color:rgba(255,255,255,.6)}
+.band .profielknop{color:var(--band-ink)} .band .profielknop.kan:hover{background:var(--band-fill);border-color:var(--band-line)}
+.band .rolpil{background:var(--band-fill);color:var(--band-ink)} .band .rolpil.admin{background:rgba(255,255,255,.16);color:#fff}
+.band .klein{color:var(--band-soft)}
+.groet{margin:34px 0 0;font:700 32px/1.15 var(--display);letter-spacing:-.025em}
+.groetsub{margin:6px 0 0;color:var(--band-soft);font-size:14px}
+.chips{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
+.chip{background:var(--band-fill);border:1px solid var(--band-line);border-radius:99px;padding:5px 12px;font-size:12px;color:var(--band-ink)}
+.band .alsbalk{color:var(--band-ink);background:rgba(217,142,43,.22)}
+.hoofd{margin-top:-66px;padding-bottom:40px}
+.blok > header{margin:30px 0 12px}
+.sectiekop{display:flex;align-items:baseline;gap:10px;margin:34px 0 12px}
+.tegels{gap:16px}
+.tegel{border-radius:16px}
+.tegel.tool{padding:0;overflow:hidden;gap:0;box-shadow:0 12px 30px rgba(15,35,60,.10)}
+.tegel.tool .thumb{display:flex;align-items:center;justify-content:center;height:96px;background:var(--paper-dim);border-bottom:1px solid var(--hairline)}
+.tegel.tool .thumb svg{max-width:100%;height:auto}
+.tegel.tool .in{display:flex;flex-direction:column;gap:5px;padding:14px 16px;flex:1;width:100%}
+.tegel.tool.binnenkort{opacity:1;background:var(--card)} .tegel.tool.binnenkort .in{opacity:.55}
+.tegel.tool.binnenkort .thumb{background:repeating-linear-gradient(135deg,var(--paper-dim) 0 10px,var(--card) 10px 20px)}
+.tegel.aan{box-shadow:0 0 0 1px var(--acc-deep),0 12px 30px rgba(46,92,138,.18)}
+.pil{font:700 10.5px var(--body);padding:2px 8px;border-radius:99px;background:var(--paper-dim);color:var(--ink-soft)}
+.pil.acc{background:color-mix(in srgb,var(--acc) 14%,transparent);color:var(--acc-deep)}
+.balk{display:flex;height:8px;border-radius:99px;overflow:hidden;background:var(--paper-dim);margin-top:4px}
+.balk i:nth-child(1){background:var(--ok)} .balk i:nth-child(2){background:var(--bad)}
+.tabpaneel{padding:0 16px 16px}
+.tabs{display:flex;gap:2px;border-bottom:1px solid var(--hairline);margin:0 -16px 14px;padding:0 10px;overflow-x:auto}
+.tabs button{border:0;background:none;color:var(--ink-soft);font:600 13px var(--body);padding:12px 12px 10px;border-bottom:2px solid transparent;cursor:pointer;white-space:nowrap}
+.tabs button:hover{color:var(--ink)} .tabs button.aan{color:var(--ink);border-bottom-color:var(--acc-deep)}
+.pane > .rij:first-child{margin-top:0}
+@media (max-width:860px){ .blok{width:100% !important} .rsz,.pgr{display:none} .binnen{padding:0 16px} .groet{font-size:26px} }
 @media (max-width:560px){ .kop .rechts{margin-left:0} }
 </style>
 </head>
@@ -148,7 +188,7 @@ th{font:800 9.5px var(--body);text-transform:uppercase;letter-spacing:.8px;color
 <!-- inloggen -->
 <div id="inlog" class="verborgen">
   <form class="inlogkaart" id="inlogform" autocomplete="on">
-    <p class="merk">Taxatietooling<small>Jesper Kivits Vastgoedadvies</small></p>
+    <p class="merk">Taxatietooling</p>
     <div class="veld"><label for="email">Mailadres</label><input id="email" type="email" autocomplete="email" required placeholder="naam@kantoor.nl"></div>
     <div class="veld"><label for="code">Teamcode</label><input id="code" type="password" autocomplete="current-password" required></div>
     <button class="knop prim" type="submit" id="inlogknop">Inloggen</button>
@@ -159,29 +199,35 @@ th{font:800 9.5px var(--body);text-transform:uppercase;letter-spacing:.8px;color
 
 <!-- hoofdmenu -->
 <div id="menu" class="verborgen">
-  <i class="pgr l" data-pgr="l" title="sleep om de paginabreedte aan te passen"></i><i class="pgr r" data-pgr="r" title="sleep om de paginabreedte aan te passen"></i>
-  <div class="kop">
-    <p class="merk">Taxatietooling</p>
-    <div class="rechts">
-      <div class="profiel"><button class="profielknop" id="wie"></button><div class="profielmenu" id="profielmenu"></div></div>
-      <button class="knop klein" id="indeling" title="volgorde en breedtes van de onderdelen terugzetten">↺ indeling</button>
-      <button class="knop klein" id="thema" title="licht of donker">◑ Donker</button>
-      <button class="knop klein" id="uitlog">Uitloggen</button>
+  <header class="band"><div class="binnen">
+    <div class="kop">
+      <div class="logo" aria-hidden="true">TT</div><p class="merk">Taxatietooling</p>
+      <div class="rechts">
+        <div class="profiel"><button class="profielknop" id="wie"></button><div class="profielmenu" id="profielmenu"></div></div>
+        <button class="knop klein" id="thema" title="licht of donker">◑ Donker</button>
+        <button class="knop klein" id="uitlog">Uitloggen</button>
+      </div>
     </div>
-  </div>
-  <div class="alsbalk verborgen" id="alsbalk"></div>
-  <div class="blokken" id="blokken">
-    <section class="blok" data-blok="tools"><header><span class="greep" title="sleep om te verplaatsen">⠿</span><h2>Tools</h2></header>
-      <div class="tegels" id="tools"></div><i class="rsz" title="sleep om de breedte aan te passen"></i></section>
-    <section class="blok verborgen" data-blok="klanten" id="klantblok"><header><span class="greep" title="sleep om te verplaatsen">⠿</span><h2 id="klantkop">Klanten</h2></header>
-      <div class="tegels" id="klanten"></div><i class="rsz" title="sleep om de breedte aan te passen"></i></section>
-    <section class="blok beheer verborgen" data-blok="team"><header><span class="greep" title="sleep om te verplaatsen">⠿</span><h2>Team</h2></header>
-      <div class="paneel"><div class="tabelwrap"><table id="teamtabel"></table></div>
+    <h1 class="groet" id="groet">Welkom</h1>
+    <p class="groetsub" id="groetsub">Kies een tool en daarna een klant.</p>
+    <div class="chips" id="chips"></div>
+    <div class="alsbalk verborgen" id="alsbalk"></div>
+  </div></header>
+  <div class="binnen hoofd">
+    <i class="pgr l" data-pgr="l" title="sleep om de paginabreedte aan te passen"></i><i class="pgr r" data-pgr="r" title="sleep om de paginabreedte aan te passen"></i>
+    <div class="blokken" id="blokken">
+      <section class="blok" data-blok="tools"><div class="tegels" id="tools"></div></section>
+      <section class="blok verborgen" data-blok="klanten" id="klantblok"><header><h2 id="klantkop">Klanten</h2></header>
+        <div class="tegels" id="klanten"></div></section>
+    </div>
+    <section class="beheer verborgen" id="beheerblok"><header class="sectiekop"><h2>Beheer</h2><span class="klein">alleen zichtbaar voor de beheerder</span></header>
+      <div class="paneel tabpaneel">
+        <div class="tabs" role="tablist"><button data-tab="team" class="aan">Team</button><button data-tab="code">Codes &amp; back-up</button><button data-tab="toolsbeheer">Tools beheren</button><button data-tab="log">Logboek</button></div>
+        <div class="pane" data-pane="team"><div class="tabelwrap"><table id="teamtabel"></table></div>
         <div class="rij"><input id="t-naam" placeholder="naam"><input id="t-email" placeholder="mailadres" type="email"><select id="t-rol"><option value="taxateur">taxateur</option><option value="admin">admin</option></select><button class="knop klein prim" id="t-toe">Toevoegen</button></div>
         <p class="klein" style="margin:8px 0 0">Er wordt geen mail verstuurd. Stuur zelf de link en de teamcode. Uitzetten = direct geen toegang meer.</p>
-        <div id="t-msg"></div></div><i class="rsz" title="sleep om de breedte aan te passen"></i></section>
-    <section class="blok beheer verborgen" data-blok="code"><header><span class="greep" title="sleep om te verplaatsen">⠿</span><h2>Teamcode &amp; back-up</h2></header>
-      <div class="paneel"><b>Teamcode</b>
+        <div id="t-msg"></div></div>
+        <div class="pane verborgen" data-pane="code"><b>Teamcode</b>
         <div class="rij"><input id="c-nieuw" type="password" placeholder="nieuwe teamcode (min. 8 tekens)" autocomplete="new-password"><button class="knop klein prim" id="c-zet">Wijzigen</button></div>
         <p class="klein" style="margin:8px 0 0">Wie al is ingelogd, blijft ingelogd. Nieuwe computers hebben de nieuwe code nodig.</p>
         <div id="c-msg"></div>
@@ -191,16 +237,15 @@ th{font:800 9.5px var(--body);text-transform:uppercase;letter-spacing:.8px;color
           <div id="a-msg"></div></div>
         <div style="margin-top:16px"><b>Back-up</b>
           <p class="klein" style="margin:4px 0 8px">Alle beoordelingen, opmerkingen, instellingen, weergaven, team en logboek als één bestand (gratis Supabase maakt zelf geen back-ups).</p>
-          <button class="knop klein" id="backup">⤓ Download back-up</button><span id="b-msg" class="klein" style="margin-left:8px"></span></div></div><i class="rsz" title="sleep om de breedte aan te passen"></i></section>
-    <section class="blok beheer verborgen" data-blok="toolsbeheer"><header><span class="greep" title="sleep om te verplaatsen">⠿</span><h2>Tools beheren</h2></header>
-      <div class="paneel"><div class="tabelwrap"><table id="tooltabel"></table></div>
+          <button class="knop klein" id="backup">⤓ Download back-up</button><span id="b-msg" class="klein" style="margin-left:8px"></span></div></div>
+        <div class="pane verborgen" data-pane="toolsbeheer"><div class="tabelwrap"><table id="tooltabel"></table></div>
         <div class="rij"><input id="nt-code" placeholder="code (bv. bollengrafiek)" list="nt-codes"><datalist id="nt-codes"></datalist><input id="nt-naam" placeholder="naam op de tegel"><input id="nt-oms" placeholder="korte omschrijving" style="flex:2 1 200px">
           <label class="klein" style="display:flex;gap:5px;align-items:center"><input type="checkbox" id="nt-kl"> zonder klant</label><button class="knop klein prim" id="nt-toe">Tool aanmaken</button></div>
         <p class="klein" style="margin:8px 0 0">Een nieuwe tool staat eerst <b>uit</b>: alleen jij ziet hem in deze lijst. Upload een versie (HTML-bestand uit de tool-chat) en zet hem daarna aan. "Zonder klant" = de tool opent direct, zonder klantkeuze.</p>
-        <div id="nt-msg"></div></div><i class="rsz" title="sleep om de breedte aan te passen"></i></section>
-    <section class="blok beheer verborgen dicht" data-blok="log" id="logblok"><header><span class="greep" title="sleep om te verplaatsen">⠿</span><h2 class="klapkop" id="logkop" title="klik om het logboek open of dicht te klappen">Logboek <span class="klapcaret">▸</span></h2><span class="klein">laatste 60 wijzigingen</span>
-        <select id="logklant" style="margin-left:6px;padding:4px 8px;border:1px solid var(--hair2);border-radius:7px;background:var(--paper);color:var(--ink)"><option value="">alle klanten</option></select></header>
-      <div class="paneel"><div class="tabelwrap"><table class="log" id="logtabel"></table></div></div><i class="rsz" title="sleep om de breedte aan te passen"></i></section>
+        <div id="nt-msg"></div></div>
+        <div class="pane verborgen" data-pane="log" id="logblok"><div class="rij" style="margin:0 0 10px"><span class="klein">laatste 60 wijzigingen</span><select id="logklant" style="flex:0 0 auto;min-width:160px"><option value="">alle klanten</option></select><span id="logkop" class="verborgen"></span></div><div class="tabelwrap"><table class="log" id="logtabel"></table></div></div>
+      </div>
+    </section>
   </div>
 </div>
 
@@ -284,24 +329,55 @@ async function laadMenu(){
   for (const r of e2.data || []) tel(r.tool_code, r, r.data && Object.keys(r.data).length);
   renderTools();
   if (GEKOZEN) renderKlanten(GEKOZEN); else { $('klantblok').classList.add('verborgen'); stopOnline(); }
-  document.querySelectorAll('.blok.beheer').forEach(b => b.classList.toggle('verborgen', !EFF().admin));
+  $('beheerblok').classList.toggle('verborgen', !EFF().admin);
   if (EFF().admin){ renderBeheer(); laadCodeStatus(); }
+  renderGroet();
 }
+/* ---------- band: begroeting en korte samenvatting ---------- */
+function renderGroet(){
+  const u = new Date().getHours(), dl = u < 6 ? 'Goedenacht' : u < 12 ? 'Goedemorgen' : u < 18 ? 'Goedemiddag' : 'Goedenavond';
+  $('groet').textContent = dl + ', ' + (EFF().naam || '').split(' ')[0];
+  $('groetsub').textContent = new Date().toLocaleDateString('nl-NL', {weekday: 'long', day: 'numeric', month: 'long'}).replace(/^./, c => c.toUpperCase()) + ' · kies een tool en daarna een klant.';
+  const laatste = {}; for (const d of DATASETS) if (d.klant_code !== 'algemeen'){ const k = d.tool_code + '|' + d.klant_code; if (!laatste[k]) laatste[k] = d; }
+  const kl = new Set(Object.values(laatste).map(d => d.klant_code)).size;
+  let aand = 0, tb = 0; for (const d of Object.values(laatste)){ const t = d.meta && d.meta.tel; if (t && t.aand) aand += t.aand; }
+  for (const T of Object.values(KEUZETEL)) for (const k of Object.values(T)) tb += k.tb || 0;
+  const c = [kl + ' klant' + (kl === 1 ? '' : 'en') + ' met data', TOOLS.length + ' tool' + (TOOLS.length === 1 ? '' : 's')];
+  if (aand) c.push(nl(aand) + ' complex' + (aand === 1 ? '' : 'en') + ' vragen aandacht'); if (tb) c.push(tb + ' ter beoordeling');
+  $('chips').innerHTML = c.map(x => `<span class="chip">${esc(x)}</span>`).join('');
+}
+/* ---------- beheer-tabbladen ---------- */
+let TAB = LSH.get('tab', 'team');
+function zetTab(t){ TAB = t; LSH.set('tab', t); document.querySelectorAll('#beheerblok .tabs [data-tab]').forEach(b => b.classList.toggle('aan', b.dataset.tab === t));
+  document.querySelectorAll('#beheerblok [data-pane]').forEach(p => p.classList.toggle('verborgen', p.dataset.pane !== t)); if (t === 'log') laadLog(); }
+document.querySelectorAll('#beheerblok .tabs [data-tab]').forEach(b => b.onclick = () => zetTab(b.dataset.tab));
+zetTab(TAB);
 function renderTools(){
   $('tools').innerHTML = TOOLS.map(t => { const n = new Set(DATASETS.filter(d => d.tool_code === t.code && d.klant_code !== 'algemeen').map(d => d.klant_code)).size, kl = t.instellingen && t.instellingen.klantloos;
-    return `<button class="tegel${GEKOZEN === t.code ? ' aan' : ''}" data-tool="${esc(t.code)}">${t.actief ? '' : '<span class="badge" title="staat uit: alleen jij ziet deze tegel">uit · alleen jij</span>'}<span class="t">${esc(t.naam)}</span><span class="o">${esc(t.omschrijving || '')}</span>
-      <span class="v"><span>${kl ? 'algemeen · openen' : n + ' klant' + (n === 1 ? '' : 'en')}</span>${t.versie ? `<span>versie ${esc(t.versie)}</span>` : ''}</span></button>`; }).join('')
-    + BINNENKORT.filter(([c]) => !TOOLS.find(t => t.code === c)).map(([, n, o]) => `<div class="tegel binnenkort"><span class="badge">binnenkort</span><span class="t">${esc(n)}</span><span class="o">${esc(o)}</span></div>`).join('');
+    return `<button class="tegel tool${GEKOZEN === t.code ? ' aan' : ''}" data-tool="${esc(t.code)}"><span class="thumb">${miniGrafiek(t.code)}</span><span class="in">${t.actief ? '' : '<span class="badge" title="staat uit: alleen jij ziet deze tegel">uit · alleen jij</span>'}<span class="t">${esc(t.naam)}</span><span class="o">${esc(t.omschrijving || '')}</span>
+      <span class="v"><span class="pil${kl ? '' : ' acc'}">${kl ? 'algemeen · openen' : n + ' klant' + (n === 1 ? '' : 'en')}</span>${t.versie ? `<span>versie ${esc(t.versie)}</span>` : ''}</span></span></button>`; }).join('')
+    + BINNENKORT.filter(([c]) => !TOOLS.find(t => t.code === c)).map(([, n, o]) => `<div class="tegel tool binnenkort"><span class="thumb"></span><span class="in"><span class="badge">binnenkort</span><span class="t">${esc(n)}</span><span class="o">${esc(o)}</span></span></div>`).join('');
   $('tools').querySelectorAll('[data-tool]').forEach(b => b.onclick = e => { const t = TOOLS.find(x => x.code === b.dataset.tool);
     if (t && t.instellingen && t.instellingen.klantloos) return openTool(t, 'algemeen');   /* tool zonder klantdata: direct openen */
     GEKOZEN = GEKOZEN === b.dataset.tool ? null : b.dataset.tool; renderTools();
     if (GEKOZEN) renderKlanten(GEKOZEN); else { $('klantblok').classList.add('verborgen'); stopOnline(); } });
+}
+/* mini-grafiekje bovenaan een tooltegel: laat zien wat de tool doet */
+function miniGrafiek(code){
+  const svg = b => `<svg viewBox="0 0 200 70" width="200" height="70" aria-hidden="true">${b}</svg>`;
+  if (code === 'controle_marktwaarde') return svg('<path d="M10 19 C40 24 60 44 90 40 S150 56 190 62" fill="none" stroke="#9AA3B2" stroke-width="1.5" stroke-dasharray="4 3"/>'
+    + [[20,24,0],[34,30,0],[48,34,0],[60,28,1],[72,41,0],[86,38,0],[98,46,0],[110,34,1],[124,48,0],[138,52,0],[150,44,0],[162,56,0],[176,60,1],[186,54,0]].map(([x, y, r]) => `<circle cx="${x}" cy="${y}" r="${r ? 5 : 4}" fill="${r ? '#C8463C' : '#4A7FB5'}" fill-opacity="${r ? .85 : .55}"/>`).join(''));
+  if (code === 'markthuur_wonen') return svg([38,46,30,52,44,58,40,49,35,55,47,60].map((h, i) => `<rect x="${14 + i * 15}" y="${64 - h}" width="9" height="${h}" rx="2" fill="#2A8C82" fill-opacity="${(.35 + i * .04).toFixed(2)}"/>`).join('') + '<path d="M14 30 L190 22" stroke="var(--ink)" stroke-width="1.3" stroke-dasharray="5 3"/>');
+  if (code === 'bollengrafiek') return svg('<path d="M8 8 C40 40 90 52 192 60" fill="none" stroke="#2456A6" stroke-width="1.6" stroke-dasharray="6 4"/>'
+    + [[20,16,6],[36,26,9],[54,33,5],[70,39,11],[92,44,7],[110,49,8],[130,51,5],[150,54,10],[172,57,6],[84,33,4],[140,44,4]].map(([x, y, r]) => `<circle cx="${x}" cy="${y}" r="${r}" fill="#2456A6" fill-opacity=".28" stroke="#2456A6" stroke-opacity=".5"/>`).join(''));
+  return svg('<rect x="40" y="14" width="120" height="42" rx="8" fill="none" stroke="#9AA3B2" stroke-dasharray="4 3"/>');
 }
 /* regel onder de klantnaam: bij een tool die tellingen meegeeft (controle marktwaarde) kort de nieuwste versie met goed / aandacht */
 function klantRegel(d){
   if (!d) return '<span class="o"><i>nog geen data gepubliceerd</i></span>';
   const m = d.meta || {}, t = m.tel;
   if (t && t.goed != null) return `<span class="o">${esc(t.versie || m.versie || '')}${t.n ? ' · ' + nl(t.n) + ' complexen' : ''}</span>
+    <span class="balk"><i style="width:${(t.goed / Math.max(1, t.goed + t.aand) * 100).toFixed(1)}%"></i><i style="width:${(t.aand / Math.max(1, t.goed + t.aand) * 100).toFixed(1)}%"></i></span>
     <span class="tel"><span class="g"><b>${nl(t.goed)}</b>goed</span><span class="a"><b>${nl(t.aand)}</b>aandacht</span></span>`;
   if (d.tool_code === 'controle_marktwaarde') return `<span class="o">${esc(m.versie || '')}${m.n ? ' · ' + nl(m.n) + ' complexen' : ''}${m.versie || m.n ? '' : esc(String(d.snapshot).slice(0, 60))}</span><span class="o klein"><i>goed / aandacht verschijnt na de eerstvolgende keer openen</i></span>`;
   return `<span class="o">Data ${esc(d.snapshot)}${m.vhe ? ' · ' + nl(m.vhe) + ' eenheden' : ''}</span>`;
@@ -373,7 +449,7 @@ function pasIndelingToe(){
   document.documentElement.style.setProperty('--menuW', LAY.pagina + 'px');
 }
 function bewaarIndeling(){ LAY.volg = [...$('blokken').children].map(b => b.dataset.blok); LSH.set('indeling', LAY); }
-$('indeling').addEventListener('click', () => { LAY = JSON.parse(JSON.stringify(LAY_STD)); LSH.set('indeling', LAY); pasIndelingToe(); });
+if ($('indeling')) $('indeling').addEventListener('click', () => { LAY = JSON.parse(JSON.stringify(LAY_STD)); LSH.set('indeling', LAY); pasIndelingToe(); });
 let LABEL = null;
 const toonLabel = (x, y, t) => { if (!LABEL){ LABEL = document.createElement('div'); LABEL.className = 'breedtelabel'; document.body.appendChild(LABEL); } LABEL.style.left = (x + 12) + 'px'; LABEL.style.top = (y + 12) + 'px'; LABEL.textContent = t; };
 const weglabel = () => { if (LABEL){ LABEL.remove(); LABEL = null; } };
@@ -599,8 +675,8 @@ $('a-zet').addEventListener('click', async () => {
   $('a-msg').innerHTML = ok ? '<div class="melding ok">Beheerderscode ingesteld. Log voortaan in met je mailadres en deze code.</div>' : `<div class="melding fout">${esc(j.fout || 'mislukt')}</div>`;
   if (ok){ $('a-nieuw').value = ''; laadCodeStatus(); }
 });
-function logOpen(){ try{ return localStorage.getItem('tt_log_open') === '1'; }catch(e){ return false; } }
-function zetLogKlap(){ const b = $('logblok'); if (!b) return; const open = logOpen(); b.classList.toggle('dicht', !open); const c = b.querySelector('.klapcaret'); if (c) c.textContent = open ? '▾' : '▸'; }
+function logOpen(){ return TAB === 'log'; }
+function zetLogKlap(){}
 async function laadLog(){
   zetLogKlap(); if (!logOpen()) return;   /* ingeklapt: niets ophalen */
   const sel = $('logklant'), kies = sel.value; sel.innerHTML = '<option value="">alle klanten</option>' + KLANTEN.map(k => `<option value="${esc(k.code)}"${k.code === kies ? ' selected' : ''}>${esc(k.naam)}</option>`).join('');
@@ -622,7 +698,6 @@ async function laadLog(){
     || '<tr><td colspan="5" class="m">nog geen wijzigingen</td></tr>';
 }
 $('logklant').addEventListener('change', laadLog);
-$('logkop').addEventListener('click', () => { try{ localStorage.setItem('tt_log_open', logOpen() ? '0' : '1'); }catch(e){} laadLog(); });
 $('backup').addEventListener('click', async () => {
   $('b-msg').textContent = 'bezig…';
   const tabellen = ['team', 'klanten', 'tools', 'datasets', 'tool_keuzes', 'tool_instellingen', 'mt_keuzes', 'mt_instellingen', 'weergaven', 'logboek'], uit = {gemaakt: new Date().toISOString()};

@@ -448,7 +448,9 @@ function maakApi(tool, klant, ds, bytes){
   const T = tool.code, K = klant.code, kanaal = T + '_' + K;
   let kan = null, mijnStaat = {}, aanwCb = null, instCb = null, wijzCb = null;
   const fout = e => { throw new Error(e && e.message ? e.message : String(e)); };
-  const ik = {email: IK.email, naam: IK.naam, admin: EFF().admin};
+  const ik = {email: IK.email, naam: IK.naam, admin: EFF().admin,
+    /* nieuwe dataversies uploaden: beheerder, of het hele team als dat per tool aanstaat (Beheer → Tools) */
+    uploaden: EFF().admin || !!(tool.instellingen && tool.instellingen.teamUpload)};
   const api = {
     versie: 1, tool: T, toolNaam: tool.naam, klant: K, klantNaam: klant.naam, algemeen: K === 'algemeen',
     ik, alsNaam: ALS ? EFF().naam : null, team: TEAM.filter(t => t.actief).map(t => ({email: t.email, naam: t.naam || t.email, rol: t.rol})),
@@ -491,7 +493,7 @@ function maakApi(tool, klant, ds, bytes){
     async verwijderWeergave(id){ const {error} = await sb.from('weergaven').delete().eq('id', id); if (error) fout(error); },
     /* beheerder: nieuw datapakket publiceren (JSON-object, of een bestand zoals een .xlsx) */
     async publiceer(inhoud, opt = {}){
-      if (!EFF().admin) fout({message: 'Alleen de beheerder kan publiceren'});
+      if (!ik.uploaden) fout({message: 'Alleen de beheerder kan publiceren'});
       let blob, ext, type;
       if (inhoud instanceof Blob){ blob = inhoud; ext = opt.extensie || (inhoud.name && inhoud.name.split('.').pop()) || 'bin'; type = opt.type || inhoud.type || 'application/octet-stream'; }
       else { blob = new Blob([await new Response(new Blob([JSON.stringify(inhoud)]).stream().pipeThrough(new CompressionStream('gzip'))).arrayBuffer()]); ext = 'json.gz'; type = 'application/gzip'; }
@@ -525,11 +527,14 @@ function renderToolBeheer(){
   $('nt-codes').innerHTML = BINNENKORT.filter(([c]) => !ALLETOOLS.find(t => t.code === c)).map(([c, n]) => `<option value="${esc(c)}">${esc(n)}</option>`).join('');
   $('tooltabel').innerHTML = '<tr><th>Tool</th><th>Code</th><th>Versie</th><th>Soort</th><th>Status</th><th>Nieuwe versie uploaden</th></tr>' + ALLETOOLS.map(t => `<tr>
     <td><b>${esc(t.naam)}</b><div class="klein">${esc(t.omschrijving || '')}</div></td><td class="klein">${esc(t.code)}</td><td>${esc(t.versie || '–')}</td>
-    <td class="klein">${t.instellingen && t.instellingen.klantloos ? 'zonder klant' : 'per klant'}</td>
+    <td class="klein">${t.instellingen && t.instellingen.klantloos ? 'zonder klant' : 'per klant<div style="margin-top:4px"><button class="knop klein" data-tteam="' + esc(t.code) + '" title="Mogen teamleden zelf nieuwe dataversies uploaden voor bestaande klanten?">' + (t.instellingen && t.instellingen.teamUpload ? '● team uploadt' : '○ alleen beheerder uploadt') + '</button></div>'}</td>
     <td><button class="knop klein" data-tactief="${esc(t.code)}">${t.actief ? '● aan' : '○ uit'}</button></td>
     <td><div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><input type="file" accept=".html,text/html" data-tbestand="${esc(t.code)}" style="max-width:210px;font-size:11px">
       <input data-tversie="${esc(t.code)}" placeholder="versie" style="width:70px;padding:5px 7px;border:1px solid var(--hair2);border-radius:7px;background:var(--paper);color:var(--ink)">
       <button class="knop klein prim" data-tupload="${esc(t.code)}">Uploaden</button></div></td></tr>`).join('');
+  $('tooltabel').querySelectorAll('[data-tteam]').forEach(b => b.onclick = async () => { const t = ALLETOOLS.find(x => x.code === b.dataset.tteam);
+    const inst = Object.assign({}, t.instellingen || {}, {teamUpload: !(t.instellingen && t.instellingen.teamUpload)});
+    const r = await sb.from('tools').update({instellingen: inst}).eq('code', t.code); if (r.error) return $('nt-msg').innerHTML = `<div class="melding fout">${esc(r.error.message)}</div>`; await laadMenu(); });
   $('tooltabel').querySelectorAll('[data-tactief]').forEach(b => b.onclick = async () => { const t = ALLETOOLS.find(x => x.code === b.dataset.tactief);
     if (!t.actief && !t.versie && !confirm('Er is nog geen versie geüpload. Toch aanzetten?')) return;
     const r = await sb.from('tools').update({actief: !t.actief}).eq('code', t.code); if (r.error) return $('nt-msg').innerHTML = `<div class="melding fout">${esc(r.error.message)}</div>`; await laadMenu(); });

@@ -44,6 +44,13 @@ button,input,select{font-family:var(--body);font-size:13px}
 .knop.prim{background:var(--acc-deep);border-color:var(--acc-deep);color:#fff}
 .knop.prim:hover{background:var(--acc)}
 .knop.klein{padding:5px 10px;font-size:12px;border-radius:7px}
+#tooltabel{table-layout:fixed;width:100%}
+#tooltabel td{vertical-align:middle}
+#tooltabel td:nth-child(2){word-break:break-all}
+#tooltabel .tb-oms{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.35;margin-top:2px}
+#tooltabel [data-tactief],#tooltabel [data-tteam]{white-space:nowrap}
+#tooltabel td:last-child > div{flex-wrap:nowrap !important}
+#tooltabel input[type=file]{max-width:190px !important;min-width:0;flex:1 1 auto}
 .knop:disabled{opacity:.5;cursor:default}
 #inlog .knop.prim{width:100%;margin-top:18px;padding:11px}
 .melding{font-size:12.5px;margin-top:12px;padding:8px 10px;border-radius:8px;background:var(--paper-dim);line-height:1.5}
@@ -358,18 +365,18 @@ function zetTab(t){ TAB = t; LSH.set('tab', t); document.querySelectorAll('#behe
 document.querySelectorAll('#beheerblok .tabs [data-tab]').forEach(b => b.onclick = () => zetTab(b.dataset.tab));
 zetTab(TAB);
 /* tools met een slot (bv. Parameterlab): tegel voor iedereen zichtbaar, openen alleen voor de toegangslijst of de beheerder */
-const magIn = t => !(t.instellingen && t.instellingen.slot) || EFF().admin || ((t.instellingen.toegang || []).map(x => String(x).toLowerCase()).includes(String(IK.email || '').toLowerCase()));
+const magIn = t => !(t.instellingen && t.instellingen.slot) || ((t.instellingen.toegang || []).map(x => String(x).toLowerCase()).includes(String(EFF().email || '').toLowerCase()));   /* alleen de toegangslijst; bij 'weergave als' telt de bekeken gebruiker */
 const toegangNamen = t => ((t.instellingen && t.instellingen.toegang) || []).map(e => ((TEAM.find(x => x.email === String(e).toLowerCase()) || {}).naam || e).split(' ')[0]).join(' en ');
 /* versie van de app: bij een tool die de app van een andere tool gebruikt, die versie */
 const appVersie = t => { const map = (t.app_pad || '').split('/')[0]; const eig = ALLETOOLS.find(x => x.code === map); return eig && eig !== t && eig.versie ? eig.versie : t.versie; };
 function renderTools(){
   $('tools').innerHTML = TOOLS.filter(t => !(t.instellingen && t.instellingen.onder)).map(t => { const n = new Set(DATASETS.filter(d => d.tool_code === t.code && d.klant_code !== 'algemeen').map(d => d.klant_code)).size, kl = t.instellingen && t.instellingen.klantloos;
     const slot = !magIn(t), ver = appVersie(t);
-    return `<button class="tegel tool${GEKOZEN === t.code ? ' aan' : ''}${slot ? ' slot' : ''}" data-tool="${esc(t.code)}"${slot ? ` title="alleen voor ${esc(toegangNamen(t))}"` : ''}><span class="thumb">${miniGrafiek(t.code)}</span><span class="in">${t.actief ? '' : '<span class="badge" title="staat uit: alleen jij ziet deze tegel">uit · alleen jij</span>'}${slot ? `<span class="badge">🔒 alleen ${esc(toegangNamen(t))}</span>` : ''}<span class="t">${esc(t.naam)}</span><span class="o">${esc(t.omschrijving || '')}</span>
-      <span class="v"><span class="pil${kl ? '' : ' acc'}">${slot ? 'alleen inzien op uitnodiging' : kl ? 'algemeen · openen' : n + ' klant' + (n === 1 ? '' : 'en')}</span>${ver ? `<span>versie ${esc(ver)}</span>` : ''}</span></span></button>`; }).join('')
+    return `<button class="tegel tool${GEKOZEN === t.code ? ' aan' : ''}${slot ? ' slot' : ''}" data-tool="${esc(t.code)}"${slot ? ' title="Niet voor deze gebruiker beschikbaar"' : ''}><span class="thumb">${miniGrafiek(t.code)}</span><span class="in">${t.actief ? '' : '<span class="badge" title="staat uit: alleen jij ziet deze tegel">uit · alleen jij</span>'}${slot ? '<span class="badge">🔒 niet beschikbaar</span>' : ''}<span class="t">${esc(t.naam)}</span><span class="o">${esc(t.omschrijving || '')}</span>
+      <span class="v"><span class="pil${kl ? '' : ' acc'}">${slot ? 'niet voor deze gebruiker' : kl ? 'algemeen · openen' : n + ' klant' + (n === 1 ? '' : 'en')}</span>${ver ? `<span>versie ${esc(ver)}</span>` : ''}</span></span></button>`; }).join('')
     + BINNENKORT.filter(([c]) => !TOOLS.find(t => t.code === c)).map(([, n, o]) => `<div class="tegel tool binnenkort"><span class="thumb"></span><span class="in"><span class="badge">binnenkort</span><span class="t">${esc(n)}</span><span class="o">${esc(o)}</span></span></div>`).join('');
   $('tools').querySelectorAll('[data-tool]').forEach(b => b.onclick = e => { const t = TOOLS.find(x => x.code === b.dataset.tool);
-    if (t && !magIn(t)) return alert(`${t.naam} is alleen toegankelijk voor ${toegangNamen(t)}.`);
+    if (t && !magIn(t)) return alert('Niet voor deze gebruiker beschikbaar.');
     if (t && t.instellingen && t.instellingen.klantloos) return openTool(t, 'algemeen');   /* tool zonder klantdata: direct openen */
     GEKOZEN = GEKOZEN === b.dataset.tool ? null : b.dataset.tool; renderTools();
     if (GEKOZEN) renderKlanten(GEKOZEN); else { $('klantblok').classList.add('verborgen'); stopOnline(); } });
@@ -530,7 +537,7 @@ async function haal(bucket, pad, tekst, stempel = ''){
 }
 async function openTool(tool, klantCode, startView = null){
   const klant = KLANTEN_ALLE.find(k => k.code === klantCode); if (!klant){ toon('menu'); return; }
-  if (!magIn(tool)){ alert(`${tool.naam} is alleen toegankelijk voor ${toegangNamen(tool)}.`); toon('menu'); return; }
+  if (!magIn(tool)){ alert('Niet voor deze gebruiker beschikbaar.'); history.replaceState(null, '', location.pathname); toon('menu'); return; }
   toon('laden'); $('ladentekst').textContent = `${tool.naam} · ${klant.naam} wordt geladen…`; stopOnline();
   try{
     const zonderData = tool.instellingen && (tool.instellingen.klantloos || tool.instellingen.data === 'geen');
@@ -660,13 +667,13 @@ function renderBeheer(){
 }
 function renderToolBeheer(){
   $('nt-codes').innerHTML = BINNENKORT.filter(([c]) => !ALLETOOLS.find(t => t.code === c)).map(([c, n]) => `<option value="${esc(c)}">${esc(n)}</option>`).join('');
-  $('tooltabel').innerHTML = '<tr><th>Tool</th><th>Code</th><th>Versie</th><th>Soort</th><th>Status</th><th>Nieuwe versie uploaden</th></tr>' + ALLETOOLS.map(t => `<tr>
-    <td><b>${esc(t.naam)}</b><div class="klein">${esc(t.omschrijving || '')}</div></td><td class="klein">${esc(t.code)}</td><td>${esc(t.versie || '–')}</td>
+  $('tooltabel').innerHTML = '<colgroup><col style="width:27%"><col style="width:13%"><col style="width:6%"><col style="width:17%"><col style="width:7%"><col></colgroup><tr><th>Tool</th><th>Code</th><th>Versie</th><th>Soort</th><th>Status</th><th>Nieuwe versie uploaden</th></tr>' + ALLETOOLS.map(t => `<tr>
+    <td><b>${esc(t.naam)}</b><div class="klein tb-oms" title="${esc(t.omschrijving || '')}">${esc(t.omschrijving || '')}</div></td><td class="klein">${esc(t.code)}</td><td>${esc(t.versie || '–')}</td>
     <td class="klein">${t.instellingen && t.instellingen.onder ? 'eerste tegel onder ' + esc((ALLETOOLS.find(x => x.code === t.instellingen.onder) || {}).naam || t.instellingen.onder) : t.instellingen && t.instellingen.klantloos ? 'zonder klant' : 'per klant<div style="margin-top:4px"><button class="knop klein" data-tteam="' + esc(t.code) + '" title="Mogen teamleden zelf nieuwe dataversies uploaden voor bestaande klanten?">' + (t.instellingen && t.instellingen.teamUpload ? '● team uploadt' : '○ alleen beheerder uploadt') + '</button></div>'}</td>
     <td><button class="knop klein" data-tactief="${esc(t.code)}">${t.actief ? '● aan' : '○ uit'}</button></td>
-    <td>${(t.app_pad || '').split('/')[0] !== t.code && ALLETOOLS.find(x => x.code === (t.app_pad || '').split('/')[0]) ? `<span class="klein">gebruikt de app van <b>${esc(ALLETOOLS.find(x => x.code === t.app_pad.split('/')[0]).naam)}</b> (v${esc(appVersie(t) || '–')}) — upload daar</span>` : `<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><input type="file" accept=".html,text/html" data-tbestand="${esc(t.code)}" style="max-width:210px;font-size:11px">
+    <td>${(t.app_pad || '').split('/')[0] !== t.code && ALLETOOLS.find(x => x.code === (t.app_pad || '').split('/')[0]) ? `<div class="klein" style="margin-bottom:4px">gebruikt nu de app van <b>${esc(ALLETOOLS.find(x => x.code === t.app_pad.split('/')[0]).naam)}</b> — een eigen upload maakt hem los</div>` : ''}<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><input type="file" accept=".html,text/html" data-tbestand="${esc(t.code)}" style="max-width:210px;font-size:11px">
       <input data-tversie="${esc(t.code)}" placeholder="versie" style="width:70px;padding:5px 7px;border:1px solid var(--hair2);border-radius:7px;background:var(--paper);color:var(--ink)">
-      <button class="knop klein prim" data-tupload="${esc(t.code)}">Uploaden</button></div>`}</td></tr>`).join('');
+      <button class="knop klein prim" data-tupload="${esc(t.code)}">Uploaden</button></div></td></tr>`).join('');
   $('tooltabel').querySelectorAll('[data-tteam]').forEach(b => b.onclick = async () => { const t = ALLETOOLS.find(x => x.code === b.dataset.tteam);
     const inst = Object.assign({}, t.instellingen || {}, {teamUpload: !(t.instellingen && t.instellingen.teamUpload)});
     const r = await sb.from('tools').update({instellingen: inst}).eq('code', t.code); if (r.error) return $('nt-msg').innerHTML = `<div class="melding fout">${esc(r.error.message)}</div>`; await laadMenu(); });

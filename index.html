@@ -6,6 +6,8 @@
 <title>Taxatietooling</title>
 <meta name="robots" content="noindex, nofollow">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.min.js"></script>
+<!-- gedeelde rekenkern modelmatige factor (Controletool, Parameterlab, Vergelijk portefeuilles) -->
+<script src="kern/mf.js?v=1"></script>
 <style>
 :root{
   --canvas:#E7EBEF; --paper:#FBFCFD; --paper-dim:#F0F3F6; --card:#FFFFFF;
@@ -168,6 +170,8 @@ th{font:800 9.5px var(--body);text-transform:uppercase;letter-spacing:.8px;color
 .tegels{gap:16px}
 .tegel{border-radius:16px}
 .tegel.tool{padding:0;overflow:hidden;gap:0;box-shadow:0 12px 30px rgba(15,35,60,.10)}
+.tegel.tool.slot{cursor:not-allowed}
+.tegel.tool.slot .thumb{filter:grayscale(.6);opacity:.75}
 .tegel.tool .thumb{display:flex;align-items:center;justify-content:center;height:96px;background:var(--paper-dim);border-bottom:1px solid var(--hairline)}
 .tegel.tool .thumb svg{max-width:100%;height:auto}
 .tegel.tool .in{display:flex;flex-direction:column;gap:5px;padding:14px 16px;flex:1;width:100%}
@@ -353,12 +357,19 @@ function zetTab(t){ TAB = t; LSH.set('tab', t); document.querySelectorAll('#behe
   document.querySelectorAll('#beheerblok [data-pane]').forEach(p => p.classList.toggle('verborgen', p.dataset.pane !== t)); if (t === 'log') laadLog(); if (t === 'gebruik') laadGebruik(); }
 document.querySelectorAll('#beheerblok .tabs [data-tab]').forEach(b => b.onclick = () => zetTab(b.dataset.tab));
 zetTab(TAB);
+/* tools met een slot (bv. Parameterlab): tegel voor iedereen zichtbaar, openen alleen voor de toegangslijst of de beheerder */
+const magIn = t => !(t.instellingen && t.instellingen.slot) || EFF().admin || ((t.instellingen.toegang || []).map(x => String(x).toLowerCase()).includes(String(IK.email || '').toLowerCase()));
+const toegangNamen = t => ((t.instellingen && t.instellingen.toegang) || []).map(e => ((TEAM.find(x => x.email === String(e).toLowerCase()) || {}).naam || e).split(' ')[0]).join(' en ');
+/* versie van de app: bij een tool die de app van een andere tool gebruikt, die versie */
+const appVersie = t => { const map = (t.app_pad || '').split('/')[0]; const eig = ALLETOOLS.find(x => x.code === map); return eig && eig !== t && eig.versie ? eig.versie : t.versie; };
 function renderTools(){
   $('tools').innerHTML = TOOLS.filter(t => !(t.instellingen && t.instellingen.onder)).map(t => { const n = new Set(DATASETS.filter(d => d.tool_code === t.code && d.klant_code !== 'algemeen').map(d => d.klant_code)).size, kl = t.instellingen && t.instellingen.klantloos;
-    return `<button class="tegel tool${GEKOZEN === t.code ? ' aan' : ''}" data-tool="${esc(t.code)}"><span class="thumb">${miniGrafiek(t.code)}</span><span class="in">${t.actief ? '' : '<span class="badge" title="staat uit: alleen jij ziet deze tegel">uit · alleen jij</span>'}<span class="t">${esc(t.naam)}</span><span class="o">${esc(t.omschrijving || '')}</span>
-      <span class="v"><span class="pil${kl ? '' : ' acc'}">${kl ? 'algemeen · openen' : n + ' klant' + (n === 1 ? '' : 'en')}</span>${t.versie ? `<span>versie ${esc(t.versie)}</span>` : ''}</span></span></button>`; }).join('')
+    const slot = !magIn(t), ver = appVersie(t);
+    return `<button class="tegel tool${GEKOZEN === t.code ? ' aan' : ''}${slot ? ' slot' : ''}" data-tool="${esc(t.code)}"${slot ? ` title="alleen voor ${esc(toegangNamen(t))}"` : ''}><span class="thumb">${miniGrafiek(t.code)}</span><span class="in">${t.actief ? '' : '<span class="badge" title="staat uit: alleen jij ziet deze tegel">uit · alleen jij</span>'}${slot ? `<span class="badge">🔒 alleen ${esc(toegangNamen(t))}</span>` : ''}<span class="t">${esc(t.naam)}</span><span class="o">${esc(t.omschrijving || '')}</span>
+      <span class="v"><span class="pil${kl ? '' : ' acc'}">${slot ? 'alleen inzien op uitnodiging' : kl ? 'algemeen · openen' : n + ' klant' + (n === 1 ? '' : 'en')}</span>${ver ? `<span>versie ${esc(ver)}</span>` : ''}</span></span></button>`; }).join('')
     + BINNENKORT.filter(([c]) => !TOOLS.find(t => t.code === c)).map(([, n, o]) => `<div class="tegel tool binnenkort"><span class="thumb"></span><span class="in"><span class="badge">binnenkort</span><span class="t">${esc(n)}</span><span class="o">${esc(o)}</span></span></div>`).join('');
   $('tools').querySelectorAll('[data-tool]').forEach(b => b.onclick = e => { const t = TOOLS.find(x => x.code === b.dataset.tool);
+    if (t && !magIn(t)) return alert(`${t.naam} is alleen toegankelijk voor ${toegangNamen(t)}.`);
     if (t && t.instellingen && t.instellingen.klantloos) return openTool(t, 'algemeen');   /* tool zonder klantdata: direct openen */
     GEKOZEN = GEKOZEN === b.dataset.tool ? null : b.dataset.tool; renderTools();
     if (GEKOZEN) renderKlanten(GEKOZEN); else { $('klantblok').classList.add('verborgen'); stopOnline(); } });
@@ -368,6 +379,8 @@ function miniGrafiek(code){
   const svg = b => `<svg viewBox="0 0 200 70" width="200" height="70" aria-hidden="true">${b}</svg>`;
   if (code === 'controle_marktwaarde') return svg('<path d="M10 19 C40 24 60 44 90 40 S150 56 190 62" fill="none" stroke="#9AA3B2" stroke-width="1.5" stroke-dasharray="4 3"/>'
     + [[20,24,0],[34,30,0],[48,34,0],[60,28,1],[72,41,0],[86,38,0],[98,46,0],[110,34,1],[124,48,0],[138,52,0],[150,44,0],[162,56,0],[176,60,1],[186,54,0]].map(([x, y, r]) => `<circle cx="${x}" cy="${y}" r="${r ? 5 : 4}" fill="${r ? '#C8463C' : '#4A7FB5'}" fill-opacity="${r ? .85 : .55}"/>`).join(''));
+  if (code === 'parameterlab') return svg('<path d="M12 58 C50 50 80 28 188 14" fill="none" stroke="#2456A6" stroke-width="1.8"/><path d="M12 62 C55 56 90 38 188 26" fill="none" stroke="#2A8C82" stroke-width="1.6" stroke-dasharray="5 4"/>'
+    + [[30,'#2456A6',.55],[70,'#2A8C82',.35],[110,'#C8463C',.7]].map(([x, k, p]) => `<line x1="${x}" x2="${x + 60}" y1="${x === 30 ? 64 : x === 70 ? 56 : 48}" y2="${x === 30 ? 64 : x === 70 ? 56 : 48}" stroke="var(--hairline)" stroke-width="3" stroke-linecap="round"/><circle cx="${x + 60 * p}" cy="${x === 30 ? 64 : x === 70 ? 56 : 48}" r="4.5" fill="${k}"/>`).join(''));
   if (code === 'markthuur_wonen') return svg([38,46,30,52,44,58,40,49,35,55,47,60].map((h, i) => `<rect x="${14 + i * 15}" y="${64 - h}" width="9" height="${h}" rx="2" fill="#2A8C82" fill-opacity="${(.35 + i * .04).toFixed(2)}"/>`).join('') + '<path d="M14 30 L190 22" stroke="var(--ink)" stroke-width="1.3" stroke-dasharray="5 3"/>');
   if (code === 'bollengrafiek') return svg('<path d="M8 8 C40 40 90 52 192 60" fill="none" stroke="#2456A6" stroke-width="1.6" stroke-dasharray="6 4"/>'
     + [[20,16,6],[36,26,9],[54,33,5],[70,39,11],[92,44,7],[110,49,8],[130,51,5],[150,54,10],[172,57,6],[84,33,4],[140,44,4]].map(([x, y, r]) => `<circle cx="${x}" cy="${y}" r="${r}" fill="#2456A6" fill-opacity=".28" stroke="#2456A6" stroke-opacity=".5"/>`).join(''));
@@ -517,6 +530,7 @@ async function haal(bucket, pad, tekst, stempel = ''){
 }
 async function openTool(tool, klantCode, startView = null){
   const klant = KLANTEN_ALLE.find(k => k.code === klantCode); if (!klant){ toon('menu'); return; }
+  if (!magIn(tool)){ alert(`${tool.naam} is alleen toegankelijk voor ${toegangNamen(tool)}.`); toon('menu'); return; }
   toon('laden'); $('ladentekst').textContent = `${tool.naam} · ${klant.naam} wordt geladen…`; stopOnline();
   try{
     const zonderData = tool.instellingen && (tool.instellingen.klantloos || tool.instellingen.data === 'geen');
@@ -524,14 +538,14 @@ async function openTool(tool, klantCode, startView = null){
     if (!ds && !zonderData){ if (!EFF().admin) throw new Error('Voor deze klant is nog geen data gepubliceerd.');
       ds = DATASETS.find(d => d.tool_code === tool.code) || null; leeg = true;
       if (!ds && tool.code === 'markthuur_wonen') throw new Error('Er is nog geen basisdataset voor deze tool.'); }
-    const [{data: lijst}, bytes] = await Promise.all([sb.storage.from('apps').list(tool.code), ds ? haal('data', ds.bestand, false) : Promise.resolve(null)]);
+    const [{data: lijst}, bytes] = await Promise.all([sb.storage.from('apps').list(tool.app_pad.split('/').slice(0, -1).join('/') || tool.code), ds ? haal('data', ds.bestand, false) : Promise.resolve(null)]);
     const gz = ds && /\.json\.gz$/.test(ds.bestand) ? bytes : null;
     /* app-versie: altijd de nieuwste (cache op pad + tijdstempel van het bestand) */
     const app = (lijst || []).find(f => f.name === tool.app_pad.split('/').pop());
     if (!app) throw new Error('De toolcode staat nog niet klaar.');
     const html = await haal('apps', tool.app_pad, true, app.updated_at || app.created_at || '');
     window.__TT = {sb, klant: klantCode, klantNaam: klant.naam, datasetId: leeg || !ds ? null : ds.id, gz, email: IK.email, admin: EFF().admin, team: TEAM, leeg, startView,
-      api: maakApi(tool, klant, leeg ? null : ds, leeg ? null : bytes),
+      api: maakApi(tool, klant, leeg ? null : ds, leeg ? null : bytes), kern: window.TTKERN || null,
       wijzigingen: tool.wijzigingen || [], thema: document.documentElement.dataset.theme || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'), alsNaam: ALS ? EFF().naam : null};
     location.hash = encodeURIComponent(tool.code) + '/' + encodeURIComponent(klantCode);
     if (!ALS) logGebruik(tool.code, klantCode);
@@ -613,6 +627,21 @@ function maakApi(tool, klant, ds, bytes){
       return JSON.parse(await new Response(st).text()); },
     async bronKeuzes(){ const B = tool.instellingen && tool.instellingen.bron; if (!B) return [];
       const {data, error} = await sb.from('tool_keuzes').select('klant_code, object_key, data, status').eq('tool_code', B); if (error) fout(error); return data || []; },
+    /* gedeelde rekenkern + de leidende formuleset uit het Parameterlab */
+    kern: window.TTKERN || null,
+    async mfVigerend(){ const {data, error} = await sb.rpc('mf_vigerend'); if (error) fout(error); return data; },
+    async mfHistorie(){ const {data, error} = await sb.rpc('mf_historie'); if (error) fout(error); return data || []; },
+    /* Parameterlab: alleen de toegangslijst (tools.parameterlab.instellingen.toegang) of de beheerder; Supabase controleert het ook */
+    lab: {
+      lid: (() => { const t = ALLETOOLS.find(x => x.code === 'parameterlab'); return !!t && magIn(t); })(),
+      async sets(){ const {data, error} = await sb.rpc('mf_lab_sets'); if (error) fout(error); return data || {}; },
+      async bewaarSets(sets){ const {error} = await sb.rpc('mf_lab_sets_bewaar', {p_sets: sets || {}}); if (error) fout(error); },
+      async publiceer(cfg, naam, notitie, effect){ const {data, error} = await sb.rpc('mf_publiceer', {p_cfg: cfg, p_naam: naam || null, p_notitie: notitie || null, p_effect: effect || null, p_kern: (window.TTKERN && window.TTKERN.KERN_VERSIE) || '1'}); if (error) fout(error); return data; },
+    },
+    /* vergelijktools: instellingen (bv. toetsconfiguratie) van de brontool per klant */
+    async bronInstellingen(){ const B = tool.instellingen && tool.instellingen.bron; if (!B) return {};
+      const {data, error} = await sb.from('tool_instellingen').select('klant_code, cfg').eq('tool_code', B); if (error) fout(error);
+      const o = {}; for (const r of data || []) o[r.klant_code] = r.cfg || {}; return o; },
     async log(n = 50){ const {data} = await sb.from('logboek').select('*').eq('tool_code', T).eq('klant_code', K).order('op', {ascending: false}).limit(n); return data || []; },
   };
   return api;
@@ -635,9 +664,9 @@ function renderToolBeheer(){
     <td><b>${esc(t.naam)}</b><div class="klein">${esc(t.omschrijving || '')}</div></td><td class="klein">${esc(t.code)}</td><td>${esc(t.versie || '–')}</td>
     <td class="klein">${t.instellingen && t.instellingen.onder ? 'eerste tegel onder ' + esc((ALLETOOLS.find(x => x.code === t.instellingen.onder) || {}).naam || t.instellingen.onder) : t.instellingen && t.instellingen.klantloos ? 'zonder klant' : 'per klant<div style="margin-top:4px"><button class="knop klein" data-tteam="' + esc(t.code) + '" title="Mogen teamleden zelf nieuwe dataversies uploaden voor bestaande klanten?">' + (t.instellingen && t.instellingen.teamUpload ? '● team uploadt' : '○ alleen beheerder uploadt') + '</button></div>'}</td>
     <td><button class="knop klein" data-tactief="${esc(t.code)}">${t.actief ? '● aan' : '○ uit'}</button></td>
-    <td><div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><input type="file" accept=".html,text/html" data-tbestand="${esc(t.code)}" style="max-width:210px;font-size:11px">
+    <td>${(t.app_pad || '').split('/')[0] !== t.code && ALLETOOLS.find(x => x.code === (t.app_pad || '').split('/')[0]) ? `<span class="klein">gebruikt de app van <b>${esc(ALLETOOLS.find(x => x.code === t.app_pad.split('/')[0]).naam)}</b> (v${esc(appVersie(t) || '–')}) — upload daar</span>` : `<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><input type="file" accept=".html,text/html" data-tbestand="${esc(t.code)}" style="max-width:210px;font-size:11px">
       <input data-tversie="${esc(t.code)}" placeholder="versie" style="width:70px;padding:5px 7px;border:1px solid var(--hair2);border-radius:7px;background:var(--paper);color:var(--ink)">
-      <button class="knop klein prim" data-tupload="${esc(t.code)}">Uploaden</button></div></td></tr>`).join('');
+      <button class="knop klein prim" data-tupload="${esc(t.code)}">Uploaden</button></div>`}</td></tr>`).join('');
   $('tooltabel').querySelectorAll('[data-tteam]').forEach(b => b.onclick = async () => { const t = ALLETOOLS.find(x => x.code === b.dataset.tteam);
     const inst = Object.assign({}, t.instellingen || {}, {teamUpload: !(t.instellingen && t.instellingen.teamUpload)});
     const r = await sb.from('tools').update({instellingen: inst}).eq('code', t.code); if (r.error) return $('nt-msg').innerHTML = `<div class="melding fout">${esc(r.error.message)}</div>`; await laadMenu(); });

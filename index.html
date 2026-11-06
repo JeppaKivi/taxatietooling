@@ -221,7 +221,7 @@ th{font:800 9.5px var(--body);text-transform:uppercase;letter-spacing:.8px;color
     </div>
     <section class="beheer verborgen" id="beheerblok"><header class="sectiekop"><h2>Beheer</h2><span class="klein">alleen zichtbaar voor de beheerder</span></header>
       <div class="paneel tabpaneel">
-        <div class="tabs" role="tablist"><button data-tab="team" class="aan">Team</button><button data-tab="code">Codes &amp; back-up</button><button data-tab="toolsbeheer">Tools beheren</button><button data-tab="log">Logboek</button></div>
+        <div class="tabs" role="tablist"><button data-tab="team" class="aan">Team</button><button data-tab="code">Codes &amp; back-up</button><button data-tab="toolsbeheer">Tools beheren</button><button data-tab="gebruik">Gebruik</button><button data-tab="log">Logboek</button></div>
         <div class="pane" data-pane="team"><div class="tabelwrap"><table id="teamtabel"></table></div>
         <div class="rij"><input id="t-naam" placeholder="naam"><input id="t-email" placeholder="mailadres" type="email"><select id="t-rol"><option value="taxateur">taxateur</option><option value="admin">admin</option></select><button class="knop klein prim" id="t-toe">Toevoegen</button></div>
         <p class="klein" style="margin:8px 0 0">Er wordt geen mail verstuurd. Stuur zelf de link en de teamcode. Uitzetten = direct geen toegang meer.</p>
@@ -242,6 +242,10 @@ th{font:800 9.5px var(--body);text-transform:uppercase;letter-spacing:.8px;color
           <label class="klein" style="display:flex;gap:5px;align-items:center"><input type="checkbox" id="nt-kl"> zonder klant</label><button class="knop klein prim" id="nt-toe">Tool aanmaken</button></div>
         <p class="klein" style="margin:8px 0 0">Een nieuwe tool staat eerst <b>uit</b>: alleen jij ziet hem in deze lijst. Upload een versie (HTML-bestand uit de tool-chat) en zet hem daarna aan. "Zonder klant" = de tool opent direct, zonder klantkeuze.</p>
         <div id="nt-msg"></div></div>
+        <div class="pane verborgen" data-pane="gebruik"><div class="rij" style="margin:0 0 10px"><span class="klein">wie gebruikt het platform</span><select id="gperiode" style="flex:0 0 auto;min-width:170px"><option value="7">laatste 7 dagen</option><option value="30">laatste 30 dagen</option><option value="90">laatste 90 dagen</option><option value="365">laatste 12 maanden</option></select></div>
+        <div class="tabelwrap"><table class="log" id="gtabel"></table></div>
+        <p style="margin:16px 0 6px"><b>Recent</b></p><div class="tabelwrap"><table class="log" id="grecent"></table></div>
+        <p class="klein" style="margin:8px 0 0">Telt het openen van het hoofdmenu en van elke tool, hoogstens één keer per half uur per tool en klant. Ook nieuwe tools tellen vanzelf mee. Regels ouder dan 12 maanden vervallen automatisch.</p></div>
         <div class="pane verborgen" data-pane="log" id="logblok"><div class="rij" style="margin:0 0 10px"><span class="klein">laatste 60 wijzigingen</span><select id="logklant" style="flex:0 0 auto;min-width:160px"><option value="">alle klanten</option></select><span id="logkop" class="verborgen"></span></div><div class="tabelwrap"><table class="log" id="logtabel"></table></div></div>
       </div>
     </section>
@@ -307,7 +311,7 @@ async function naInloggen(){
   if (!mij || !mij.actief){ await sb.auth.signOut(); toon('inlog'); $('inlogmsg').innerHTML = '<div class="melding fout">Dit mailadres heeft (nog) geen toegang. Vraag Jesper.</div>'; return; }
   IK.naam = mij.naam || IK.email; IK.admin = mij.rol === 'admin';
   renderWie(); pasIndelingToe();
-  await laadMenu();
+  await laadMenu(); logGebruik();
   const h = decodeURIComponent(location.hash.slice(1)).split('/');
   if (h[0] && h[1]){ const tool = TOOLS.find(x => x.code === h[0]); if (tool) return openTool(tool, h[1]); }
   toon('menu');
@@ -341,7 +345,7 @@ function renderGroet(){
 /* ---------- beheer-tabbladen ---------- */
 let TAB = LSH.get('tab', 'team');
 function zetTab(t){ TAB = t; LSH.set('tab', t); document.querySelectorAll('#beheerblok .tabs [data-tab]').forEach(b => b.classList.toggle('aan', b.dataset.tab === t));
-  document.querySelectorAll('#beheerblok [data-pane]').forEach(p => p.classList.toggle('verborgen', p.dataset.pane !== t)); if (t === 'log') laadLog(); }
+  document.querySelectorAll('#beheerblok [data-pane]').forEach(p => p.classList.toggle('verborgen', p.dataset.pane !== t)); if (t === 'log') laadLog(); if (t === 'gebruik') laadGebruik(); }
 document.querySelectorAll('#beheerblok .tabs [data-tab]').forEach(b => b.onclick = () => zetTab(b.dataset.tab));
 zetTab(TAB);
 function renderTools(){
@@ -518,6 +522,7 @@ async function openTool(tool, klantCode, startView = null){
       api: maakApi(tool, klant, leeg ? null : ds, leeg ? null : bytes),
       wijzigingen: tool.wijzigingen || [], thema: document.documentElement.dataset.theme || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'), alsNaam: ALS ? EFF().naam : null};
     location.hash = encodeURIComponent(tool.code) + '/' + encodeURIComponent(klantCode);
+    if (!ALS) logGebruik(tool.code, klantCode);
     const w = $('toolwrap'); w.innerHTML = ''; const f = document.createElement('iframe'); f.title = tool.naam; const u = URL.createObjectURL(new Blob([html], {type: 'text/html'})); f.src = u; f.onload = () => setTimeout(() => URL.revokeObjectURL(u), 5000); w.appendChild(f);
     toon('toolwrap'); document.title = `${klant.naam} · ${tool.naam}`;
   }catch(e){ alert(e.message || e); history.replaceState(null, '', location.pathname); toon('menu'); }
@@ -600,7 +605,7 @@ function renderBeheer(){
   $('teamtabel').querySelectorAll('[data-actief]').forEach(b => b.onclick = async () => { const t = TEAM.find(x => x.email === b.dataset.actief);
     const r = await sb.from('team').update({actief: !t.actief}).eq('email', t.email); if (r.error) return $('t-msg').innerHTML = `<div class="melding fout">${esc(r.error.message)}</div>`;
     await laadMenu(); });
-  laadLog(); renderToolBeheer();
+  laadLog(); laadGebruik(); renderToolBeheer();
 }
 function renderToolBeheer(){
   $('nt-codes').innerHTML = BINNENKORT.filter(([c]) => !ALLETOOLS.find(t => t.code === c)).map(([c, n]) => `<option value="${esc(c)}">${esc(n)}</option>`).join('');
@@ -690,6 +695,32 @@ async function laadLog(){
     || '<tr><td colspan="5" class="m">nog geen wijzigingen</td></tr>';
 }
 $('logklant').addEventListener('change', laadLog);
+/* ---------- gebruik: wie opent wat (registratie + overzicht voor de beheerder) ---------- */
+function logGebruik(tool = null, klant = null){ try{ sb.rpc('gebruik_log', {p_tool: tool, p_klant: klant}).then(() => {}, () => {}); }catch(e){} }   /* mag nooit het werk blokkeren */
+async function laadGebruik(){
+  if (TAB !== 'gebruik' || !IK.email || !EFF().admin) return;
+  const sel = $('gperiode'), dagen = +(sel.value = LSH.get('gperiode', '30'));
+  const {data, error} = await sb.rpc('gebruik_overzicht', {p_dagen: dagen});
+  if (error){ $('gtabel').innerHTML = `<tr><td class="m">${esc(error.message)}</td></tr>`; $('grecent').innerHTML = ''; return; }
+  const rijen = data || [], lid = e => TEAM.find(t => t.email === e), naam = e => (lid(e) || {}).naam || e;
+  const toolNaam = c => (ALLETOOLS.find(t => t.code === c) || {}).naam || c, klantNaam = c => (KLANTEN_ALLE.find(k => k.code === c) || {}).naam || c || '';
+  const P = {}; const pp = e => P[e] || (P[e] = {e, laatst: null, dagen: new Set(), menu: 0, tools: 0, inlog: 0, mis: 0, top: {}});
+  for (const t of TEAM) if (t.actief) pp(t.email);
+  for (const r of rijen){ const p = pp(r.email);
+    if (r.soort === 'mislukt'){ p.mis++; continue; }
+    if (!p.laatst || r.op > p.laatst) p.laatst = r.op;
+    if (r.soort === 'inlog'){ p.inlog++; continue; }
+    p.dagen.add(new Date(r.op).toLocaleDateString('sv-SE'));
+    if (!r.tool_code) p.menu++; else { p.tools++; const k = toolNaam(r.tool_code) + (r.klant_code ? ' · ' + klantNaam(r.klant_code) : ''); p.top[k] = (p.top[k] || 0) + 1; } }
+  const lijst = Object.values(P).sort((a, b) => (b.laatst || '').localeCompare(a.laatst || ''));
+  $('gtabel').innerHTML = '<tr><th>Wie</th><th>Laatst actief</th><th>Dagen actief</th><th>Hoofdmenu</th><th>Tool geopend</th><th>Meest geopend</th><th>Inlogs</th></tr>' + lijst.map(p => {
+    const top = Object.entries(p.top).sort((a, b) => b[1] - a[1])[0], geen = !lid(p.e);
+    return `<tr><td>${esc(naam(p.e))}${geen ? ' <span class="klein">(geen teamlid)</span>' : ''}</td><td class="m">${p.laatst ? esc(tijd(p.laatst)) : '<span class="klein">nog niet</span>'}</td><td>${p.dagen.size || ''}</td><td>${p.menu || ''}</td><td>${p.tools || ''}</td><td>${top ? esc(top[0]) + ' <span class="klein">(' + top[1] + '×)</span>' : ''}</td><td>${p.inlog || ''}${p.mis ? ` <span style="color:#c62828">${p.inlog ? '· ' : ''}${p.mis} mislukt</span>` : ''}</td></tr>`; }).join('');
+  const wat = r => r.soort === 'inlog' ? 'ingelogd' : r.soort === 'mislukt' ? '<span style="color:#c62828">inlog mislukt</span>' : !r.tool_code ? 'hoofdmenu geopend' : esc(toolNaam(r.tool_code)) + (r.klant_code ? ' · ' + esc(klantNaam(r.klant_code)) : '');
+  $('grecent').innerHTML = '<tr><th>Wanneer</th><th>Wie</th><th>Wat</th></tr>' + (rijen.slice(0, 40).map(r => `<tr><td class="m">${esc(new Date(r.op).toLocaleString('nl-NL', {day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit'}))}</td><td>${esc(naam(r.email))}</td><td>${wat(r)}</td></tr>`).join('')
+    || '<tr><td colspan="3" class="m">nog niets in deze periode</td></tr>');
+}
+$('gperiode').addEventListener('change', e => { LSH.set('gperiode', e.target.value); laadGebruik(); });
 $('backup').addEventListener('click', async () => {
   $('b-msg').textContent = 'bezig…';
   const tabellen = ['team', 'klanten', 'tools', 'datasets', 'tool_keuzes', 'tool_instellingen', 'mt_keuzes', 'mt_instellingen', 'weergaven', 'logboek'], uit = {gemaakt: new Date().toISOString()};

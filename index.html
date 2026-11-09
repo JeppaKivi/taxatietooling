@@ -50,6 +50,16 @@ button,input,select{font-family:var(--body);font-size:13px}
 #tooltabel .tb-oms{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.35;margin-top:2px}
 #tooltabel [data-tactief],#tooltabel [data-tteam]{white-space:nowrap}
 #tooltabel td:last-child > div{flex-wrap:nowrap !important}
+#tooltabel .tb-toeg{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#tooltabel .tb-toeg.dicht{color:#9A5B00}
+.toeg-pop{position:absolute;z-index:200;width:320px;background:var(--card);color:var(--ink);border:1px solid var(--hair2);border-radius:10px;box-shadow:0 10px 30px rgba(10,30,60,.22);padding:12px 14px;font-size:13px}
+.toeg-pop .tp-kop{margin-bottom:8px}
+.toeg-pop label{display:flex;gap:7px;align-items:center;padding:3px 0;cursor:pointer}
+.toeg-pop .tp-lijst{margin:4px 0 6px 22px;max-height:220px;overflow:auto;border-left:2px solid var(--hair2);padding-left:8px}
+.toeg-pop .tp-lijst.uit{opacity:.4;pointer-events:none}
+.toeg-pop .tp-lijst .klein{opacity:.7}
+.toeg-pop .tp-noot{margin:6px 0 10px;line-height:1.35}
+.toeg-pop .tp-knop{display:flex;justify-content:flex-end;gap:6px}
 #tooltabel input[type=file]{max-width:190px !important;min-width:0;flex:1 1 auto}
 .knop:disabled{opacity:.5;cursor:default}
 #inlog .knop.prim{width:100%;margin-top:18px;padding:11px}
@@ -177,7 +187,8 @@ th{font:800 9.5px var(--body);text-transform:uppercase;letter-spacing:.8px;color
 .tegels{gap:16px}
 .tegel{border-radius:16px}
 .tegel.tool{padding:0;overflow:hidden;gap:0;box-shadow:0 12px 30px rgba(15,35,60,.10)}
-.tegel.tool.slot{cursor:not-allowed}
+.tegel.tool.slot,.tegel.vergelijk.slot{cursor:not-allowed}
+.tegel.vergelijk.slot .vgl-ico{filter:grayscale(.6);opacity:.75}
 .tegel.tool.slot .thumb{filter:grayscale(.6);opacity:.75}
 .tegel.tool .thumb{display:flex;align-items:center;justify-content:center;height:96px;background:var(--paper-dim);border-bottom:1px solid var(--hairline)}
 .tegel.tool .thumb svg{max-width:100%;height:auto}
@@ -366,6 +377,42 @@ document.querySelectorAll('#beheerblok .tabs [data-tab]').forEach(b => b.onclick
 zetTab(TAB);
 /* tools met een slot (bv. Parameterlab): tegel voor iedereen zichtbaar, openen alleen voor de toegangslijst of de beheerder */
 const magIn = t => !(t.instellingen && t.instellingen.slot) || ((t.instellingen.toegang || []).map(x => String(x).toLowerCase()).includes(String(EFF().email || '').toLowerCase()));   /* alleen de toegangslijst; bij 'weergave als' telt de bekeken gebruiker */
+const toegangLabel = t => { const sl = t.instellingen && t.instellingen.slot, n = ((t.instellingen && t.instellingen.toegang) || []).length;
+  return !sl ? '● iedereen' : !n ? '🔒 niemand' : '🔒 ' + esc(toegangNamen(t) || (n + ' personen')); };
+/* Beheer → Tools: per tool kiezen wie hem kan openen (instellingen.slot + instellingen.toegang). Ook de Supabase-check van het Parameterlab leest deze lijst. */
+function toegangPopup(t, knop){
+  document.querySelectorAll('.toeg-pop').forEach(x => x.remove());
+  if (!t) return;
+  const inst = t.instellingen || {}, sl = !!inst.slot, lijst = (inst.toegang || []).map(x => String(x).toLowerCase());
+  const leden = TEAM.filter(m => m.actief || lijst.includes(String(m.email).toLowerCase()));
+  const pop = document.createElement('div'); pop.className = 'toeg-pop';
+  pop.innerHTML = `<div class="tp-kop">Wie kan <b>${esc(t.naam)}</b> openen?</div>
+    <label class="tp-r"><input type="radio" name="tp-m" value="alle"${sl ? '' : ' checked'}> Iedereen in het team</label>
+    <label class="tp-r"><input type="radio" name="tp-m" value="sel"${sl ? ' checked' : ''}> Alleen wie hieronder is aangevinkt</label>
+    <div class="tp-lijst${sl ? '' : ' uit'}">${leden.map(m => `<label><input type="checkbox" value="${esc(String(m.email).toLowerCase())}"${lijst.includes(String(m.email).toLowerCase()) ? ' checked' : ''}> ${esc(m.naam || m.email)}<span class="klein"> ${esc(m.email)}${m.actief ? '' : ' · uit'}</span></label>`).join('')}</div>
+    <div class="klein tp-noot">De tegel blijft voor iedereen zichtbaar; wie niet is aangevinkt krijgt "Niet voor deze gebruiker beschikbaar". Niemand aangevinkt = voor niemand te openen (ook niet voor jou).</div>
+    <div class="tp-knop"><button class="knop klein" data-tp="weg">Annuleren</button><button class="knop klein prim" data-tp="ok">Opslaan</button></div>`;
+  document.body.appendChild(pop);
+  const r = knop.getBoundingClientRect(), w = 320;
+  pop.style.left = Math.max(8, Math.min(innerWidth - w - 8, r.left + scrollX)) + 'px'; pop.style.top = (r.bottom + scrollY + 6) + 'px';
+  const lijstEl = pop.querySelector('.tp-lijst');
+  pop.querySelectorAll('[name=tp-m]').forEach(x => x.onchange = () => lijstEl.classList.toggle('uit', pop.querySelector('[name=tp-m]:checked').value !== 'sel'));
+  const sluit = () => { pop.remove(); document.removeEventListener('mousedown', buiten); };
+  const buiten = e => { if (!pop.contains(e.target)) sluit(); };
+  setTimeout(() => document.addEventListener('mousedown', buiten), 0);
+  pop.querySelector('[data-tp=weg]').onclick = sluit;
+  pop.querySelector('[data-tp=ok]').onclick = async () => {
+    const sel = pop.querySelector('[name=tp-m]:checked').value === 'sel';
+    const toeg = [...lijstEl.querySelectorAll('input:checked')].map(x => x.value);
+    const nieuw = Object.assign({}, inst, {slot: sel, toegang: toeg});
+    if (!sel) delete nieuw.slot;
+    const ik = String(IK.email || '').toLowerCase();
+    if (sel && !toeg.includes(ik) && !confirm('Je zet jezelf ook uit: daarna kun jij ' + t.naam + ' ook niet openen. Doorgaan?')) return;
+    const res = await sb.from('tools').update({instellingen: nieuw}).eq('code', t.code);
+    if (res.error) return $('nt-msg').innerHTML = `<div class="melding fout">${esc(res.error.message)}</div>`;
+    sluit(); $('nt-msg').innerHTML = `<div class="melding ok">${esc(t.naam)}: ${sel ? (toeg.length ? 'alleen ' + esc(toeg.map(e => ((TEAM.find(x => String(x.email).toLowerCase() === e) || {}).naam || e).split(' ')[0]).join(', ')) : 'voor niemand te openen') : 'voor iedereen te openen'}.</div>`;
+    await laadMenu(); };
+}
 const toegangNamen = t => ((t.instellingen && t.instellingen.toegang) || []).map(e => ((TEAM.find(x => x.email === String(e).toLowerCase()) || {}).naam || e).split(' ')[0]).join(' en ');
 /* versie van de app: bij een tool die de app van een andere tool gebruikt, die versie */
 const appVersie = t => { const map = (t.app_pad || '').split('/')[0]; const eig = ALLETOOLS.find(x => x.code === map); return eig && eig !== t && eig.versie ? eig.versie : t.versie; };
@@ -411,9 +458,9 @@ function renderKlanten(code){
   const laatste = {}; for (const d of DATASETS) if (d.tool_code === code && !laatste[d.klant_code]) laatste[d.klant_code] = d;
   const ADM = EFF().admin, lijst = KLANTEN.filter(k => laatste[k.code]);  // alleen klanten met data voor deze tool (ook voor de beheerder)
   const subs = TOOLS.filter(t => t.instellingen && t.instellingen.onder === code);   /* bv. Vergelijk portefeuilles: altijd de eerste tegel */
-  $('klanten').innerHTML = subs.map(t => `<button class="tegel vergelijk" data-sub="${esc(t.code)}"><span class="vgl-ico">${miniGrafiek(t.code)}</span><span class="t">${esc(t.naam)}</span>
+  $('klanten').innerHTML = subs.map(t => `<button class="tegel vergelijk${magIn(t) ? '' : ' slot'}" data-sub="${esc(t.code)}"${magIn(t) ? '' : ' title="Niet voor deze gebruiker beschikbaar"'}><span class="vgl-ico">${miniGrafiek(t.code)}</span><span class="t">${esc(t.naam)}</span>
       <span class="o">${esc(t.omschrijving || '')}</span>
-      <span class="v"><span>${lijst.length} klant${lijst.length === 1 ? '' : 'en'}</span>${t.versie ? `<span>versie ${esc(t.versie)}</span>` : ''}${t.actief ? '' : '<span class="badge">uit · alleen jij</span>'}</span></button>`).join('')
+      <span class="v"><span>${lijst.length} klant${lijst.length === 1 ? '' : 'en'}</span>${t.versie ? `<span>versie ${esc(t.versie)}</span>` : ''}${t.actief ? '' : '<span class="badge">uit · alleen jij</span>'}${magIn(t) ? '' : '<span class="badge">🔒 niet beschikbaar</span>'}</span></button>`).join('')
     + lijst.map(k => { const d = laatste[k.code], kz = (KEUZETEL[code] || {})[k.code];
     return `<button class="tegel" data-klant="${esc(k.code)}"><span class="t">${esc(k.naam)}</span>
       ${klantRegel(d)}
@@ -424,7 +471,7 @@ function renderKlanten(code){
     + (ADM ? '<button class="tegel nieuw" id="nieuweklant">+ Nieuwe klant</button>' : '')
     + (!lijst.length && !ADM ? '<p class="klein">Nog geen klanten met data voor deze tool.</p>' : '');
   $('klanten').querySelectorAll('[data-klant]').forEach(b => b.onclick = e => openTool(tool, b.dataset.klant, e.target.closest('[data-dataklant]') ? 'data' : null));
-  $('klanten').querySelectorAll('[data-sub]').forEach(b => b.onclick = () => { const t = TOOLS.find(x => x.code === b.dataset.sub); if (t) openTool(t, 'algemeen'); });
+  $('klanten').querySelectorAll('[data-sub]').forEach(b => b.onclick = () => { const t = TOOLS.find(x => x.code === b.dataset.sub); if (t && !magIn(t)) return alert('Niet voor deze gebruiker beschikbaar.'); if (t) openTool(t, 'algemeen'); });
   if ($('nieuweklant')) $('nieuweklant').onclick = async () => {
     const naam = (prompt('Naam van de klant (bv. Wonen Zuid):') || '').trim(); if (!naam) return;
     const voorstel = naam.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
@@ -667,16 +714,18 @@ function renderBeheer(){
 }
 function renderToolBeheer(){
   $('nt-codes').innerHTML = BINNENKORT.filter(([c]) => !ALLETOOLS.find(t => t.code === c)).map(([c, n]) => `<option value="${esc(c)}">${esc(n)}</option>`).join('');
-  $('tooltabel').innerHTML = '<colgroup><col style="width:27%"><col style="width:13%"><col style="width:6%"><col style="width:17%"><col style="width:7%"><col></colgroup><tr><th>Tool</th><th>Code</th><th>Versie</th><th>Soort</th><th>Status</th><th>Nieuwe versie uploaden</th></tr>' + ALLETOOLS.map(t => `<tr>
+  $('tooltabel').innerHTML = '<colgroup><col style="width:23%"><col style="width:11%"><col style="width:6%"><col style="width:15%"><col style="width:7%"><col style="width:12%"><col></colgroup><tr><th>Tool</th><th>Code</th><th>Versie</th><th>Soort</th><th>Status</th><th>Wie kan erin</th><th>Nieuwe versie uploaden</th></tr>' + ALLETOOLS.map(t => `<tr>
     <td><b>${esc(t.naam)}</b><div class="klein tb-oms" title="${esc(t.omschrijving || '')}">${esc(t.omschrijving || '')}</div></td><td class="klein">${esc(t.code)}</td><td>${esc(t.versie || '–')}</td>
     <td class="klein">${t.instellingen && t.instellingen.onder ? 'eerste tegel onder ' + esc((ALLETOOLS.find(x => x.code === t.instellingen.onder) || {}).naam || t.instellingen.onder) : t.instellingen && t.instellingen.klantloos ? 'zonder klant' : 'per klant<div style="margin-top:4px"><button class="knop klein" data-tteam="' + esc(t.code) + '" title="Mogen teamleden zelf nieuwe dataversies uploaden voor bestaande klanten?">' + (t.instellingen && t.instellingen.teamUpload ? '● team uploadt' : '○ alleen beheerder uploadt') + '</button></div>'}</td>
     <td><button class="knop klein" data-tactief="${esc(t.code)}">${t.actief ? '● aan' : '○ uit'}</button></td>
+    <td><button class="knop klein tb-toeg${t.instellingen && t.instellingen.slot ? ' dicht' : ''}" data-ttoeg="${esc(t.code)}" title="Kies wie deze tool kan openen. De tegel blijft voor iedereen zichtbaar.">${toegangLabel(t)}</button></td>
     <td>${(t.app_pad || '').split('/')[0] !== t.code && ALLETOOLS.find(x => x.code === (t.app_pad || '').split('/')[0]) ? `<div class="klein" style="margin-bottom:4px">gebruikt nu de app van <b>${esc(ALLETOOLS.find(x => x.code === t.app_pad.split('/')[0]).naam)}</b> — een eigen upload maakt hem los</div>` : ''}<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><input type="file" accept=".html,text/html" data-tbestand="${esc(t.code)}" style="max-width:210px;font-size:11px">
       <input data-tversie="${esc(t.code)}" placeholder="versie" style="width:70px;padding:5px 7px;border:1px solid var(--hair2);border-radius:7px;background:var(--paper);color:var(--ink)">
       <button class="knop klein prim" data-tupload="${esc(t.code)}">Uploaden</button></div></td></tr>`).join('');
   $('tooltabel').querySelectorAll('[data-tteam]').forEach(b => b.onclick = async () => { const t = ALLETOOLS.find(x => x.code === b.dataset.tteam);
     const inst = Object.assign({}, t.instellingen || {}, {teamUpload: !(t.instellingen && t.instellingen.teamUpload)});
     const r = await sb.from('tools').update({instellingen: inst}).eq('code', t.code); if (r.error) return $('nt-msg').innerHTML = `<div class="melding fout">${esc(r.error.message)}</div>`; await laadMenu(); });
+  $('tooltabel').querySelectorAll('[data-ttoeg]').forEach(b => b.onclick = e => { e.stopPropagation(); toegangPopup(ALLETOOLS.find(x => x.code === b.dataset.ttoeg), b); });
   $('tooltabel').querySelectorAll('[data-tactief]').forEach(b => b.onclick = async () => { const t = ALLETOOLS.find(x => x.code === b.dataset.tactief);
     if (!t.actief && !t.versie && !confirm('Er is nog geen versie geüpload. Toch aanzetten?')) return;
     const r = await sb.from('tools').update({actief: !t.actief}).eq('code', t.code); if (r.error) return $('nt-msg').innerHTML = `<div class="melding fout">${esc(r.error.message)}</div>`; await laadMenu(); });

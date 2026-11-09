@@ -51,10 +51,11 @@ button,input,select{font-family:var(--body);font-size:13px}
 #tooltabel [data-tactief],#tooltabel [data-tteam]{white-space:nowrap}
 #tooltabel td:last-child > div{flex-wrap:nowrap !important}
 #tooltabel .tb-naam{display:flex;align-items:center;gap:6px}
-#tooltabel .tb-pijl{display:inline-flex;flex-direction:column;gap:1px;flex:none}
-#tooltabel .tb-pijl button{border:1px solid var(--hair2);background:var(--paper);color:var(--ink);font-size:8px;line-height:1;padding:2px 4px;border-radius:4px;cursor:pointer;opacity:.75}
-#tooltabel .tb-pijl button:hover{opacity:1;border-color:#154473}
-#tooltabel .tb-eerste [data-tomhoog],#tooltabel .tb-laatste [data-tomlaag]{visibility:hidden}
+#tooltabel .tb-sleep{cursor:grab;user-select:none;touch-action:none}
+body.tb-slepen,body.tb-slepen *{cursor:grabbing !important;user-select:none}
+#tooltabel tr.tb-gesleept td{background:rgba(21,68,115,.08);opacity:.75}
+#tooltabel tr.tb-doel-boven td{box-shadow:inset 0 3px 0 #E07B1A}
+#tooltabel tr.tb-doel-onder td{box-shadow:inset 0 -3px 0 #E07B1A}
 #tooltabel .tb-hang{flex:none;width:22px;text-align:center;opacity:.55}
 #tooltabel tr.tb-sub td{background:rgba(21,68,115,.035)}
 #tooltabel .tb-toeg{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -743,20 +744,51 @@ function toolVolgorde(){
   for (const s of ALLETOOLS) if (!uit.includes(s)) uit.push(s);
   return uit;
 }
-async function verschuifTool(code, r){
-  const hoofd = ALLETOOLS.filter(t => !(t.instellingen && t.instellingen.onder)), i = hoofd.findIndex(t => t.code === code), j = i + r;
-  if (i < 0 || j < 0 || j >= hoofd.length) return;
-  [hoofd[i], hoofd[j]] = [hoofd[j], hoofd[i]];
+async function zetVolgorde(hoofd){
   const upd = hoofd.map((t, k) => ({t, v: (k + 1) * 10})).filter(x => x.t.volgorde !== x.v);
   for (const x of upd){ const res = await sb.from('tools').update({volgorde: x.v}).eq('code', x.t.code); if (res.error) return $('nt-msg').innerHTML = `<div class="melding fout">${esc(res.error.message)}</div>`; }
   for (const s of ALLETOOLS) if (s.instellingen && s.instellingen.onder){ const ouder = hoofd.find(t => t.code === s.instellingen.onder); const v = ouder ? (hoofd.indexOf(ouder) + 1) * 10 + 1 : s.volgorde;
     if (s.volgorde !== v){ await sb.from('tools').update({volgorde: v}).eq('code', s.code); } }
   await laadMenu();
 }
+/* volgorde slepen: toolnaam ingedrukt houden en op/neer slepen; sub-tools gaan mee met hun tool */
+function sleepTool(e, greep){
+  if (e.button !== 0) return;
+  const code = greep.dataset.tsleep, tab = $('tooltabel'), y0 = e.clientY;
+  const groep = c => [...tab.querySelectorAll('tr[data-tgroep]')].filter(r => r.dataset.tgroep === c);
+  let actief = false, doel = null, na = false;
+  const hoofdRijen = () => [...tab.querySelectorAll('tr[data-thoofd]')];
+  const start = () => { actief = true; document.body.classList.add('tb-slepen'); groep(code).forEach(r => r.classList.add('tb-gesleept')); };
+  const timer = setTimeout(start, 180);
+  const beweeg = ev => {
+    if (!actief){ if (Math.abs(ev.clientY - y0) > 4){ clearTimeout(timer); start(); } else return; }
+    ev.preventDefault();
+    tab.querySelectorAll('.tb-doel-boven,.tb-doel-onder').forEach(r => r.classList.remove('tb-doel-boven', 'tb-doel-onder'));
+    doel = null;
+    for (const r of hoofdRijen()){
+      const rs = groep(r.dataset.thoofd), top = rs[0].getBoundingClientRect().top, bot = rs[rs.length - 1].getBoundingClientRect().bottom;
+      if (ev.clientY >= top && ev.clientY <= bot){ doel = r.dataset.thoofd; na = ev.clientY > (top + bot) / 2; break; }
+    }
+    if (!doel){ const H = hoofdRijen(); if (!H.length) return; const eerste = groep(H[0].dataset.thoofd)[0].getBoundingClientRect().top;
+      if (ev.clientY < eerste){ doel = H[0].dataset.thoofd; na = false; } else { doel = H[H.length - 1].dataset.thoofd; na = true; } }
+    if (doel === code){ doel = null; return; }
+    const rs = groep(doel); (na ? rs[rs.length - 1] : rs[0]).classList.add(na ? 'tb-doel-onder' : 'tb-doel-boven');
+  };
+  const los = async () => {
+    clearTimeout(timer); removeEventListener('pointermove', beweeg); removeEventListener('pointerup', los); removeEventListener('pointercancel', los);
+    document.body.classList.remove('tb-slepen');
+    tab.querySelectorAll('.tb-gesleept,.tb-doel-boven,.tb-doel-onder').forEach(r => r.classList.remove('tb-gesleept', 'tb-doel-boven', 'tb-doel-onder'));
+    if (!actief || !doel) return;
+    const hoofd = ALLETOOLS.filter(t => !(t.instellingen && t.instellingen.onder)), mij = hoofd.find(t => t.code === code);
+    hoofd.splice(hoofd.indexOf(mij), 1); let i = hoofd.findIndex(t => t.code === doel); if (na) i++;
+    hoofd.splice(i, 0, mij); await zetVolgorde(hoofd);
+  };
+  addEventListener('pointermove', beweeg, {passive: false}); addEventListener('pointerup', los); addEventListener('pointercancel', los);
+}
 function renderToolBeheer(){
   $('nt-codes').innerHTML = BINNENKORT.filter(([c]) => !ALLETOOLS.find(t => t.code === c)).map(([c, n]) => `<option value="${esc(c)}">${esc(n)}</option>`).join('');
-  $('tooltabel').innerHTML = '<colgroup><col style="width:21%"><col style="width:10%"><col style="width:5%"><col style="width:13%"><col style="width:6%"><col style="width:10.5%"><col style="width:10.5%"><col></colgroup><tr><th>Tool</th><th>Code</th><th>Versie</th><th>Soort</th><th>Status</th><th>Wie kan erin</th><th>Wie kan aanpassen</th><th>Nieuwe versie uploaden</th></tr>' + toolVolgorde().map((t, _i, L) => { const H = L.filter(x => !(x.instellingen && x.instellingen.onder)); return `<tr class="${t.instellingen && t.instellingen.onder ? 'tb-sub' : ''}${H[0] === t ? ' tb-eerste' : ''}${H[H.length - 1] === t ? ' tb-laatste' : ''}">
-    <td><div class="tb-naam">${t.instellingen && t.instellingen.onder ? '<span class="tb-hang" title="hangt altijd onder ' + esc((ALLETOOLS.find(x => x.code === t.instellingen.onder) || {}).naam || '') + '">↳</span>' : `<span class="tb-pijl"><button data-tomhoog="${esc(t.code)}" title="tegel naar links / omhoog">▲</button><button data-tomlaag="${esc(t.code)}" title="tegel naar rechts / omlaag">▼</button></span>`}<b>${esc(t.naam)}</b></div><div class="klein tb-oms" title="${esc(t.omschrijving || '')}">${esc(t.omschrijving || '')}</div></td><td class="klein">${esc(t.code)}</td><td>${esc(t.versie || '–')}</td>
+  $('tooltabel').innerHTML = '<colgroup><col style="width:21%"><col style="width:10%"><col style="width:5%"><col style="width:13%"><col style="width:6%"><col style="width:10.5%"><col style="width:10.5%"><col></colgroup><tr><th>Tool</th><th>Code</th><th>Versie</th><th>Soort</th><th>Status</th><th>Wie kan erin</th><th>Wie kan aanpassen</th><th>Nieuwe versie uploaden</th></tr>' + toolVolgorde().map((t, _i, L) => { const H = L.filter(x => !(x.instellingen && x.instellingen.onder)); const og = t.instellingen && t.instellingen.onder; return `<tr class="${og ? 'tb-sub' : ''}" data-tgroep="${esc(og || t.code)}"${og ? '' : ` data-thoofd="${esc(t.code)}"`}>
+    <td><div class="tb-naam">${t.instellingen && t.instellingen.onder ? '<span class="tb-hang" title="hangt altijd onder ' + esc((ALLETOOLS.find(x => x.code === t.instellingen.onder) || {}).naam || '') + '">↳</span>' : ''}<b${t.instellingen && t.instellingen.onder ? '' : ` class="tb-sleep" data-tsleep="${esc(t.code)}" title="ingedrukt houden en slepen om de volgorde te wijzigen"`}>${esc(t.naam)}</b></div><div class="klein tb-oms" title="${esc(t.omschrijving || '')}">${esc(t.omschrijving || '')}</div></td><td class="klein">${esc(t.code)}</td><td>${esc(t.versie || '–')}</td>
     <td class="klein">${t.instellingen && t.instellingen.onder ? 'eerste tegel onder ' + esc((ALLETOOLS.find(x => x.code === t.instellingen.onder) || {}).naam || t.instellingen.onder) : t.instellingen && t.instellingen.klantloos ? 'zonder klant' : 'per klant<div style="margin-top:4px"><button class="knop klein" data-tteam="' + esc(t.code) + '" title="Mogen teamleden zelf nieuwe dataversies uploaden voor bestaande klanten?">' + (t.instellingen && t.instellingen.teamUpload ? '● team uploadt' : '○ alleen beheerder uploadt') + '</button></div>'}</td>
     <td><button class="knop klein" data-tactief="${esc(t.code)}">${t.actief ? '● aan' : '○ uit'}</button></td>
     <td><button class="knop klein tb-toeg${t.instellingen && t.instellingen.slot ? ' dicht' : ''}" data-ttoeg="${esc(t.code)}" title="Kies wie deze tool kan openen. De tegel blijft voor iedereen zichtbaar.">${toegangLabel(t)}</button></td>
@@ -769,7 +801,7 @@ function renderToolBeheer(){
     const r = await sb.from('tools').update({instellingen: inst}).eq('code', t.code); if (r.error) return $('nt-msg').innerHTML = `<div class="melding fout">${esc(r.error.message)}</div>`; await laadMenu(); });
   $('tooltabel').querySelectorAll('[data-ttoeg]').forEach(b => b.onclick = e => { e.stopPropagation(); toegangPopup(ALLETOOLS.find(x => x.code === b.dataset.ttoeg), b); });
   $('tooltabel').querySelectorAll('[data-tbewerk]').forEach(b => b.onclick = e => { e.stopPropagation(); toegangPopup(ALLETOOLS.find(x => x.code === b.dataset.tbewerk), b, 'bewerk'); });
-  $('tooltabel').querySelectorAll('[data-tomhoog],[data-tomlaag]').forEach(b => b.onclick = () => verschuifTool(b.dataset.tomhoog || b.dataset.tomlaag, b.dataset.tomhoog ? -1 : 1));
+  $('tooltabel').querySelectorAll('[data-tsleep]').forEach(b => b.onpointerdown = e => sleepTool(e, b));
   $('tooltabel').querySelectorAll('[data-tactief]').forEach(b => b.onclick = async () => { const t = ALLETOOLS.find(x => x.code === b.dataset.tactief);
     if (!t.actief && !t.versie && !confirm('Er is nog geen versie geüpload. Toch aanzetten?')) return;
     const r = await sb.from('tools').update({actief: !t.actief}).eq('code', t.code); if (r.error) return $('nt-msg').innerHTML = `<div class="melding fout">${esc(r.error.message)}</div>`; await laadMenu(); });

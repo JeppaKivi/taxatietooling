@@ -607,6 +607,22 @@ async function haal(bucket, pad, tekst, stempel = ''){
   const w = tekst ? await data.text() : new Uint8Array(await data.arrayBuffer());
   cache('put', sl, w); return w;
 }
+/* voorladen: wat een tool in IndexedDB ('tt_voorlaad', sleutel tool|klant|naam) bewaart, staat klaar vóór de tool opent
+   (window.__TT.voorlaad). Zo kan een tool grote data (bv. het datapakket van de Controletool) direct lezen, zonder de 5 MB-browseropslag. */
+function voorlaad(tool, klant){
+  const pre = tool + '|' + klant + '|';
+  const lees = new Promise(res => { try{
+    const rq = indexedDB.open('tt_voorlaad', 1);
+    rq.onupgradeneeded = () => { if (!rq.result.objectStoreNames.contains('kv')) rq.result.createObjectStore('kv'); };
+    rq.onerror = rq.onblocked = () => res(null);
+    rq.onsuccess = () => { const d = rq.result, out = {};
+      try{ const c = d.transaction('kv', 'readonly').objectStore('kv').openCursor(IDBKeyRange.bound(pre, pre + '\uffff'));
+        c.onsuccess = () => { const x = c.result; if (x){ out[x.key] = x.value; x.continue(); } else { d.close(); res(out); } };
+        c.onerror = () => { d.close(); res(null); };
+      }catch(e){ d.close(); res(null); } };
+  }catch(e){ res(null); } });
+  return Promise.race([lees, new Promise(res => setTimeout(() => res(null), 4000))]);
+}
 async function openTool(tool, klantCode, startView = null){
   const klant = KLANTEN_ALLE.find(k => k.code === klantCode); if (!klant){ toon('menu'); return; }
   if (!magIn(tool)){ alert('Niet voor deze gebruiker beschikbaar.'); history.replaceState(null, '', location.pathname); toon('menu'); return; }
@@ -617,7 +633,7 @@ async function openTool(tool, klantCode, startView = null){
     if (!ds && !zonderData){ if (!EFF().admin) throw new Error('Voor deze klant is nog geen data gepubliceerd.');
       ds = DATASETS.find(d => d.tool_code === tool.code) || null; leeg = true;
       if (!ds && tool.code === 'markthuur_wonen') throw new Error('Er is nog geen basisdataset voor deze tool.'); }
-    const [{data: lijst}, bytes] = await Promise.all([sb.storage.from('apps').list(tool.app_pad.split('/').slice(0, -1).join('/') || tool.code), ds ? haal('data', ds.bestand, false) : Promise.resolve(null)]);
+    const [{data: lijst}, bytes, vl] = await Promise.all([sb.storage.from('apps').list(tool.app_pad.split('/').slice(0, -1).join('/') || tool.code), ds ? haal('data', ds.bestand, false) : Promise.resolve(null), voorlaad(tool.code, klantCode)]);
     const gz = ds && /\.json\.gz$/.test(ds.bestand) ? bytes : null;
     /* app-versie: altijd de nieuwste (cache op pad + tijdstempel van het bestand) */
     const app = (lijst || []).find(f => f.name === tool.app_pad.split('/').pop());
@@ -625,7 +641,7 @@ async function openTool(tool, klantCode, startView = null){
     const html = await haal('apps', tool.app_pad, true, app.updated_at || app.created_at || '');
     window.__TT = {sb, klant: klantCode, klantNaam: klant.naam, datasetId: leeg || !ds ? null : ds.id, gz, email: IK.email, admin: EFF().admin, bewerken: magBewerken(tool), team: TEAM, leeg, startView,
       api: maakApi(tool, klant, leeg ? null : ds, leeg ? null : bytes), kern: window.TTKERN || null,
-      wijzigingen: tool.wijzigingen || [], thema: document.documentElement.dataset.theme || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'), alsNaam: ALS ? EFF().naam : null};
+      voorlaad: vl || undefined, wijzigingen: tool.wijzigingen || [], thema: document.documentElement.dataset.theme || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'), alsNaam: ALS ? EFF().naam : null};
     location.hash = encodeURIComponent(tool.code) + '/' + encodeURIComponent(klantCode);
     if (!ALS) logGebruik(tool.code, klantCode);
     const w = $('toolwrap'); w.innerHTML = ''; const f = document.createElement('iframe'); f.title = tool.naam; const u = URL.createObjectURL(new Blob([html], {type: 'text/html'})); f.src = u; f.onload = () => setTimeout(() => URL.revokeObjectURL(u), 5000); w.appendChild(f);

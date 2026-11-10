@@ -664,6 +664,8 @@ function maakApi(tool, klant, ds, bytes){
     ik, alsNaam: ALS ? EFF().naam : null, team: TEAM.filter(t => t.actief).map(t => ({email: t.email, naam: t.naam || t.email, rol: t.rol})),
     naam: e => ((TEAM.find(t => t.email === e) || {}).naam) || e || '?',
     thema: () => document.documentElement.dataset.theme || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'),
+    /* thema vanuit de tool wijzigen: geldt ook voor het hoofdmenu en de andere tools */
+    zetThema: t => { if (t !== 'dark' && t !== 'light') return; LSH.set('thema', t); zetThema(t); },
     dashboard: () => window.ttNaarMenu(),
     /* datapakket van deze klant (laatst gepubliceerd) */
     pakket: ds ? {id: ds.id, snapshot: ds.snapshot, bestand: ds.bestand, meta: ds.meta || {}, op: ds.op, door: ds.door} : null,

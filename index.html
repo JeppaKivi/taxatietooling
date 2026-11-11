@@ -373,12 +373,12 @@ async function laadMenu(){
     sb.from('klanten').select('*').order('naam'),
     sb.from('datasets').select('id, klant_code, tool_code, snapshot, bestand, bytes, meta, door, op, status').eq('status', 'gepubliceerd').order('op', {ascending: false}),
     sb.from('mt_keuzes').select('klant_code, op, inst, voorstel, toelichting, status'),
-    sb.from('tool_keuzes').select('tool_code, klant_code, op, data, status')]);
+    sb.from('tool_keuzes').select('tool_code, klant_code, object_key, op, data, status')]);
   ALLETOOLS = a.data || []; TOOLS = ALLETOOLS.filter(t => t.actief || (EFF().admin && t.versie));   /* een uitgezette tool met versie ziet alleen de beheerder (om te testen) */ KLANTEN = (b.data || []).filter(k => !(k.meta && k.meta.verborgen)); KLANTEN_ALLE = b.data || []; DATASETS = c.data || [];
   KEUZETEL = {}; const tel = (tool, r, gevuld) => { const T = KEUZETEL[tool] || (KEUZETEL[tool] = {}), k = T[r.klant_code] || (T[r.klant_code] = {n: 0, op: null, tb: 0, ak: 0});
     if (r.status === 'ter_beoordeling') k.tb++; if (r.status === 'akkoord') k.ak++; if (!gevuld) return; k.n++; if (!k.op || r.op > k.op) k.op = r.op; };
   for (const r of d.data || []) tel('markthuur_wonen', r, (r.inst && Object.keys(r.inst).length) || r.voorstel || r.toelichting);
-  for (const r of e2.data || []) tel(r.tool_code, r, r.data && Object.keys(r.data).length);
+  for (const r of e2.data || []) if (!String(r.object_key || '').startsWith('__')) tel(r.tool_code, r, r.data && Object.keys(r.data).length);   /* '__…' = tool-instelling (bv. zichtbare versies), geen beoordeling */
   renderTools();
   if (GEKOZEN) renderKlanten(GEKOZEN); else { $('klantblok').classList.add('verborgen'); stopOnline(); }
   $('beheerblok').classList.toggle('verborgen', !EFF().admin);

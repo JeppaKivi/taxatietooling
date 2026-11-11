@@ -147,6 +147,15 @@ h2{font:800 11px var(--body);text-transform:uppercase;letter-spacing:1.4px;color
 .tegel.vergelijk .vgl-ico svg{width:126px;height:44px}
 .tegel.vergelijk .badge{font-size:10.5px}
 .tegel.nieuw{border-style:dashed;align-items:center;justify-content:center;color:var(--ink-soft);font-weight:700}
+.tegel.nieuw.invoer{cursor:default;align-items:stretch;justify-content:flex-start;color:var(--ink);border-style:solid;border-color:var(--ink-soft)}
+.tegel.nieuw.invoer .t{font-size:13px;font-weight:800}
+.tegel.nieuw.invoer input{font:600 15px var(--body);padding:8px 10px;border:1.5px solid var(--hairline);border-radius:9px;background:var(--paper);color:var(--ink);width:100%;box-sizing:border-box}
+.tegel.nieuw.invoer input:focus{outline:none;border-color:#154473}
+.tegel.nieuw.invoer .rij{display:flex;gap:8px;align-items:center;margin-top:2px}
+.tegel.nieuw.invoer .klein{font-weight:500}
+.tegel .balk4{display:flex;height:8px;border-radius:99px;overflow:hidden;background:var(--paper-dim);margin-top:4px;gap:2px}
+.tegel .tel4{display:flex;gap:10px;flex-wrap:wrap;align-items:baseline;margin:6px 0 2px;font-size:11.5px;color:var(--ink-soft)}
+.tegel .tel4 b{font:800 17px var(--body);font-variant-numeric:tabular-nums;margin-right:3px}
 .stpil{font:800 9.5px var(--body);text-transform:uppercase;letter-spacing:.6px;padding:2px 7px;border-radius:99px}
 .stpil.tb{background:color-mix(in srgb,var(--warn) 18%,transparent);color:var(--warn)}
 .stpil.ak{background:color-mix(in srgb,var(--ok) 16%,transparent);color:var(--ok)}
@@ -491,6 +500,15 @@ function klantRegel(d){
   if (t && t.goed != null) return `<span class="o">${esc(t.versie || m.versie || '')}${t.n ? ' · ' + nl(t.n) + ' complexen' : ''}</span>
     <span class="balk"><i style="width:${(t.goed / Math.max(1, t.goed + t.aand) * 100).toFixed(1)}%"></i><i style="width:${(t.aand / Math.max(1, t.goed + t.aand) * 100).toFixed(1)}%"></i></span>
     <span class="tel"><span class="g"><b>${nl(t.goed)}</b>goed</span><span class="a"><b>${nl(t.aand)}</b>aandacht</span></span>`;
+  /* BOG/MOG/ZOG: complexen en eenheden, en een balk met het oordeel (voorzet = nog geen eigen markthuur) */
+  if (d.tool_code === 'bog_mog_zog'){
+    const n = t ? t.n : m.complexen, v = t ? t.vhe : m.vhe;
+    const kop = `<span class="o">${n != null ? nl(n) + ' complexen' : ''}${v != null ? ' · ' + nl(v) + ' eenheden' : ''}</span>`;
+    if (!t) return kop + '<span class="o klein"><i>oordeel verschijnt na de eerstvolgende keer openen</i></span>';
+    const del = [['ok', 'var(--ok)', 'binnen'], ['warn', 'var(--warn)', 'aandacht'], ['bad', 'var(--bad)', 'buiten'], ['vz', '#9DB3CF', 'voorzet']].filter(x => t[x[0]] > 0);
+    return kop + `<span class="balk4">${del.map(([k, kl]) => `<i style="flex:${t[k]};background:${kl}"></i>`).join('')}</span>
+      <span class="tel4">${del.map(([k, kl, nm]) => `<span><b style="color:${kl}">${nl(t[k])}</b>${nm}</span>`).join('')}</span>`;
+  }
   if (d.tool_code === 'controle_marktwaarde') return `<span class="o">${esc(m.versie || '')}${m.n ? ' · ' + nl(m.n) + ' complexen' : ''}${m.versie || m.n ? '' : esc(String(d.snapshot).slice(0, 60))}</span><span class="o klein"><i>goed / aandacht verschijnt na de eerstvolgende keer openen</i></span>`;
   return `<span class="o">Data ${esc(d.snapshot)}${m.vhe ? ' · ' + nl(m.vhe) + ' eenheden' : ''}</span>`;
 }
@@ -514,19 +532,28 @@ function renderKlanten(code){
     + (!lijst.length && !ADM ? '<p class="klein">Nog geen klanten met data voor deze tool.</p>' : '');
   $('klanten').querySelectorAll('[data-klant]').forEach(b => b.onclick = e => openTool(tool, b.dataset.klant, e.target.closest('[data-dataklant]') ? 'data' : null));
   $('klanten').querySelectorAll('[data-sub]').forEach(b => b.onclick = () => { const t = TOOLS.find(x => x.code === b.dataset.sub); if (t && !magIn(t)) return alert('Niet voor deze gebruiker beschikbaar.'); if (t) openTool(t, 'algemeen'); });
-  if ($('nieuweklant')) $('nieuweklant').onclick = async () => {
-    const naam = (prompt('Naam van de klant (bv. Wonen Zuid):') || '').trim(); if (!naam) return;
-    const voorstel = naam.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
-    // bestaat de klant al (bv. bij een andere tool)? dan die gebruiken, anders aanmaken
-    let bestaand = KLANTEN.find(k => k.code === voorstel || k.naam.trim().toLowerCase() === naam.toLowerCase()), code;
-    if (bestaand) code = bestaand.code;
-    else {
-      code = (prompt('Korte code (kleine letters, cijfers, _):', voorstel) || '').trim(); if (!code) return;
-      const r = await sb.from('klanten').insert({code, naam}); if (r.error) return alert('Toevoegen mislukt: ' + r.error.message);
-      await laadMenu();
-    }
-    // direct de tool openen om data in te laden; de tegel verschijnt zodra er gepubliceerd is
-    openTool(tool, code, 'data');
+  /* nieuwe klant: de tegel zelf wordt het invoerveld (geen pop-up); bestaande klant (bv. van een andere tool) wordt hergebruikt */
+  if ($('nieuweklant')) $('nieuweklant').onclick = () => {
+    const o = $('nieuweklant'); if (o.classList.contains('invoer')) return;
+    const b = document.createElement('div'); b.className = 'tegel nieuw invoer'; b.id = 'nieuweklant'; o.replaceWith(b);   /* div i.p.v. button: een invoerveld mag niet in een knop */
+    b.innerHTML = `<span class="t">Nieuwe klant</span><input id="nk-naam" placeholder="Naam van de klant, bv. Wonen Zuid" autocomplete="off" spellcheck="false">
+      <span class="rij"><span class="knop klein prim" id="nk-ok" role="button">Aanmaken en openen</span><span class="knop klein" id="nk-af" role="button">Annuleer</span></span><span class="o klein" id="nk-info">Enter = aanmaken · Esc = annuleren</span>`;
+    const inp = $('nk-naam'); inp.focus();
+    const codeVan = naam => naam.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+    const toonInfo = () => { const naam = inp.value.trim(), c = codeVan(naam), best = KLANTEN_ALLE.find(k => k.code === c || k.naam.trim().toLowerCase() === naam.toLowerCase());
+      $('nk-info').textContent = !naam ? 'Enter = aanmaken · Esc = annuleren' : best ? `bestaande klant "${best.naam}" — wordt voor deze tool gebruikt` : `nieuwe klant · code ${c}`; };
+    inp.oninput = toonInfo;
+    const annuleer = e => { if (e) e.stopPropagation(); renderKlanten(code); };
+    const maak = async e => { if (e) e.stopPropagation(); const naam = inp.value.trim(); if (!naam) return inp.focus();
+      const c = codeVan(naam); if (!c) return;
+      const best = KLANTEN_ALLE.find(k => k.code === c || k.naam.trim().toLowerCase() === naam.toLowerCase());
+      let kc = best ? best.code : c;
+      if (!best){ $('nk-info').textContent = 'klant wordt aangemaakt…'; const r = await sb.from('klanten').insert({code: kc, naam}); if (r.error){ $('nk-info').textContent = 'Toevoegen mislukt: ' + r.error.message; return; } await laadMenu(); }
+      // de tool opent op het dashboard met het venster om de aanlevering in te lezen; de tegel verschijnt na publiceren
+      openTool(tool, kc, tool === 'bog_mog_zog' ? null : 'data'); };
+    inp.onkeydown = e => { e.stopPropagation(); if (e.key === 'Enter') maak(); if (e.key === 'Escape') annuleer(); };
+    inp.onclick = e => e.stopPropagation();
+    $('nk-ok').onclick = maak; $('nk-af').onclick = annuleer;
   };
   $('klantblok').scrollIntoView({behavior: 'smooth', block: 'nearest'}); pasIndelingToe();
   volgOnline(code, lijst.map(k => k.code));

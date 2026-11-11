@@ -110,6 +110,13 @@ body.sleept-blok{user-select:none;cursor:grabbing}
 .profielknop.kan:hover{border-color:var(--hair2);background:var(--card)}
 .profielmenu{display:none;position:absolute;right:0;top:calc(100% + 6px);z-index:20;background:var(--card);border:1px solid var(--hairline);border-radius:12px;box-shadow:0 12px 34px rgba(15,25,40,.2);padding:6px;min-width:280px}
 .profielmenu.open{display:block}
+#onlineknop .stip{display:inline-block;width:7px;height:7px;border-radius:50%;background:#86D7A2;margin-right:6px;vertical-align:1px}
+#onlineknop.leeg .stip{background:rgba(255,255,255,.4)}
+.onlinemenu{min-width:300px}
+.onlinemenu .orij{display:flex;gap:10px;align-items:flex-start;padding:7px 8px;border-radius:8px;font-size:12.5px}
+.onlinemenu .orij .w{color:var(--ink-soft);font-size:11.5px;margin-top:1px}
+.onlinemenu .orij .t{margin-left:auto;color:var(--ink-soft);font-size:11px;white-space:nowrap}
+.onlinemenu .leeg{padding:8px;color:var(--ink-soft);font-size:12px}
 .profielmenu .kopje{font:800 9.5px var(--body);text-transform:uppercase;letter-spacing:.8px;color:var(--ink-soft);padding:6px 8px 4px}
 .profielmenu button{display:flex;align-items:center;gap:8px;width:100%;text-align:left;border:0;background:none;color:var(--ink);padding:8px;border-radius:8px;cursor:pointer;font-size:12.5px}
 .profielmenu button:hover{background:var(--paper-dim)}
@@ -242,6 +249,7 @@ th{font:800 9.5px var(--body);text-transform:uppercase;letter-spacing:.8px;color
     <div class="kop">
       <div class="logo" aria-hidden="true"><svg viewBox="0 0 24 24" width="26" height="26"><circle cx="12" cy="12" r="8" fill="none" stroke="rgba(255,255,255,.22)" stroke-width="4.5"/><circle cx="12" cy="12" r="8" fill="none" stroke="#fff" stroke-width="4.5" stroke-dasharray="36 50.3" transform="rotate(-90 12 12)"/><circle cx="12" cy="12" r="8" fill="none" stroke="#F26430" stroke-width="4.5" stroke-dasharray="10 50.3" stroke-dashoffset="-37.5" transform="rotate(-90 12 12)"/></svg></div><p class="merk">Taxatietooling</p>
       <div class="rechts">
+        <div class="profiel verborgen" id="onlinewrap"><button class="knop klein" id="onlineknop" title="wie is er nu ingelogd (alleen zichtbaar voor jou)"></button><div class="profielmenu onlinemenu" id="onlinemenu"></div></div>
         <div class="profiel"><button class="profielknop" id="wie"></button><div class="profielmenu" id="profielmenu"></div></div>
         <button class="knop klein" id="thema" title="licht of donker">◑ Donker</button>
         <button class="knop klein" id="uitlog">Uitloggen</button>
@@ -350,7 +358,7 @@ async function naInloggen(){
   if (!mij || !mij.actief){ await sb.auth.signOut(); toon('inlog'); $('inlogmsg').innerHTML = '<div class="melding fout">Dit mailadres heeft (nog) geen toegang. Vraag Jesper.</div>'; return; }
   IK.naam = mij.naam || IK.email; IK.admin = mij.rol === 'admin';
   renderWie(); pasIndelingToe();
-  await laadMenu(); logGebruik();
+  await laadMenu(); logGebruik(); onlineStart();
   const h = decodeURIComponent(location.hash.slice(1)).split('/');
   if (h[0] && h[1]){ const tool = TOOLS.find(x => x.code === h[0]); if (tool) return openTool(tool, h[1]); }
   toon('menu');
@@ -585,6 +593,31 @@ document.addEventListener('pointerdown', e => {
     addEventListener('pointermove', mv); addEventListener('pointerup', up); }
 });
 
+/* ---------- online: wie is ingelogd en waar (hoofdmenu of tool · klant). Iedereen meldt zich, alleen de beheerder ziet het overzicht ---------- */
+let ONL = null, ONL_WAAR = null, ONL_SINDS = null;
+function onlineStart(){
+  try{ if (ONL) sb.removeChannel(ONL); }catch(e){}
+  ONL = sb.channel('tt_online', {config: {presence: {key: IK.email || 'onbekend'}}});
+  ONL.on('presence', {event: 'sync'}, renderOnline).subscribe(st => { if (st === 'SUBSCRIBED') onlineTrack(); });
+}
+function onlineWaar(tool, klant){ ONL_WAAR = tool ? {tool: tool.naam, code: tool.code, klant: klant || null} : null; ONL_SINDS = new Date().toISOString(); onlineTrack(); }
+function onlineTrack(){ if (!ONL) return; try{ ONL.track({email: IK.email, naam: IK.naam, waar: ONL_WAAR, sinds: ONL_SINDS || new Date().toISOString()}); }catch(e){} }
+function renderOnline(){
+  const wrap = $('onlinewrap'); if (!wrap) return;
+  wrap.classList.toggle('verborgen', !IK.admin);
+  if (!IK.admin || !ONL) return;
+  const lijst = [];
+  for (const metas of Object.values(ONL.presenceState())) for (const m of metas) if (m.email && m.email !== IK.email) lijst.push(m);
+  const mensen = new Set(lijst.map(m => m.email)).size;
+  const kn = $('onlineknop'); kn.innerHTML = `<span class="stip"></span>${mensen ? mensen + ' online' : 'niemand online'}`; kn.classList.toggle('leeg', !mensen);
+  const knaam = c => ((KLANTEN_ALLE.find(k => k.code === c) || {}).naam) || c;
+  const tijd = t => { try{ return new Date(t).toLocaleTimeString('nl-NL', {hour: '2-digit', minute: '2-digit'}); }catch(e){ return ''; } };
+  lijst.sort((a, b) => String(a.naam).localeCompare(String(b.naam), 'nl') || String(a.sinds).localeCompare(String(b.sinds)));
+  $('onlinemenu').innerHTML = '<div class="kopje">Nu ingelogd</div>' + (lijst.length ? lijst.map(m => `<div class="orij"><div><b>${esc(m.naam || m.email)}</b><div class="w">${m.waar ? esc(m.waar.tool) + (m.waar.klant && m.waar.klant !== 'algemeen' ? ' · ' + esc(knaam(m.waar.klant)) : '') : 'hoofdmenu'}</div></div><span class="t">sinds ${tijd(m.sinds)}</span></div>`).join('') : '<div class="leeg">Er is nu niemand anders ingelogd.</div>');
+}
+$('onlineknop').addEventListener('click', e => { e.stopPropagation(); $('onlinemenu').classList.toggle('open'); });
+document.addEventListener('click', e => { if (!e.target.closest('#onlinewrap')) $('onlinemenu').classList.remove('open'); });
+
 /* ---------- wie is waar (aanwezigheid per klant; het hoofdmenu kijkt mee zonder zelf mee te tellen) ---------- */
 let ONLINE_KAN = [];
 function stopOnline(){ for (const c of ONLINE_KAN) sb.removeChannel(c); ONLINE_KAN = []; }
@@ -633,7 +666,7 @@ function voorlaad(tool, klant){
 async function openTool(tool, klantCode, startView = null){
   const klant = KLANTEN_ALLE.find(k => k.code === klantCode); if (!klant){ toon('menu'); return; }
   if (!magIn(tool)){ alert('Niet voor deze gebruiker beschikbaar.'); history.replaceState(null, '', location.pathname); toon('menu'); return; }
-  toon('laden'); $('ladentekst').textContent = `${tool.naam} · ${klant.naam} wordt geladen…`; stopOnline();
+  toon('laden'); $('ladentekst').textContent = `${tool.naam} · ${klant.naam} wordt geladen…`; stopOnline(); onlineWaar(tool, klantCode);
   try{
     const zonderData = tool.instellingen && (tool.instellingen.klantloos || tool.instellingen.data === 'geen');
     let ds = DATASETS.find(d => d.tool_code === tool.code && d.klant_code === klantCode), leeg = false;
@@ -753,7 +786,7 @@ function maakApi(tool, klant, ds, bytes){
   };
   return api;
 }
-window.ttNaarMenu = async () => { $('toolwrap').innerHTML = ''; sb.removeAllChannels(); history.replaceState(null, '', location.pathname); document.title = 'Taxatietooling'; delete window.__TT; await laadMenu(); toon('menu'); };
+window.ttNaarMenu = async () => { $('toolwrap').innerHTML = ''; sb.removeAllChannels(); ONL = null; history.replaceState(null, '', location.pathname); document.title = 'Taxatietooling'; delete window.__TT; ONL_WAAR = null; ONL_SINDS = null; onlineStart(); await laadMenu(); toon('menu'); };
 window.ttNaPubliceren = async () => { await laadMenu(); };
 
 /* ---------- beheer (alleen admin) ---------- */

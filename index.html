@@ -460,6 +460,13 @@ function miniGrafiek(code){
   /* BOG·MOG·ZOG: 5 staven in de typekleuren van de tool (TYPEKL: Kantoren, Winkels, Zorg, Maatschappelijk, Bedrijfsmatig).
      Hoogte = mediaan referentie-€/m² p/j per type (brainbay, 09-11-2026: 145 / 169 / 155 / 100 / 80), vast gehouden. Kleuren mee aanpassen als de tool ze wijzigt. */
   if (code === 'bog_mog_zog') return svg([['#2F6FD0', 145], ['#E3B505', 169], ['#D23F3F', 155], ['#EE8A24', 100], ['#8A4FC4', 80]].map(([k, v], i) => { const h = Math.round(v / 169 * 54); return `<rect x="${40 + i * 26}" y="${64 - h}" width="16" height="${h}" rx="2.5" fill="${k}"/>`; }).join('') + '<line x1="32" y1="64.5" x2="168" y2="64.5" stroke="var(--hair2)" stroke-width="1"/>');
+  /* Disconteringsvoet: waterval van de opbouw — basis plus risico-opslagen (van koel naar warm), eindigend in de DV */
+  if (code === 'disconteringsvoet'){ let cum = 0, x = 16, b = '';
+    for (const [d, k] of [[18, '#2456A6'], [10, '#4A7FB5'], [9, '#2A8C82'], [-5, '#3B9C5F'], [12, '#D9A23A'], [9, '#C8463C']]){
+      const y0 = 64 - cum, y1 = 64 - cum - d, top = Math.min(y0, y1), h = Math.abs(d);
+      b += `<rect x="${x}" y="${top}" width="18" height="${h}" rx="2" fill="${k}" fill-opacity="${d < 0 ? .55 : .9}"/>`;
+      cum += d; x += 26; if (x < 170) b += `<line x1="${x - 8}" x2="${x}" y1="${64 - cum}" y2="${64 - cum}" stroke="var(--ink-soft)" stroke-width="1" stroke-dasharray="2 2"/>`; }
+    return svg(`<defs><linearGradient id="dvrisk" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#2456A6"/><stop offset=".55" stop-color="#D9A23A"/><stop offset="1" stop-color="#C8463C"/></linearGradient></defs>` + b + `<rect x="${x}" y="${64 - cum}" width="18" height="${cum}" rx="2" fill="url(#dvrisk)"/><line x1="10" y1="64.5" x2="${x + 24}" y2="64.5" stroke="var(--hair2)" stroke-width="1"/>`); }
   if (code === 'markthuur_wonen') return svg([38,46,30,52,44,58,40,49,35,55,47,60].map((h, i) => `<rect x="${14 + i * 15}" y="${64 - h}" width="9" height="${h}" rx="2" fill="#2A8C82" fill-opacity="${(.35 + i * .04).toFixed(2)}"/>`).join('') + '<path d="M14 30 L190 22" stroke="var(--ink)" stroke-width="1.3" stroke-dasharray="5 3"/>');
   if (code === 'bollengrafiek') return svg('<path d="M8 8 C40 40 90 52 192 60" fill="none" stroke="#2456A6" stroke-width="1.6" stroke-dasharray="6 4"/>'
     + [[20,16,6],[36,26,9],[54,33,5],[70,39,11],[92,44,7],[110,49,8],[130,51,5],[150,54,10],[172,57,6],[84,33,4],[140,44,4]].map(([x, y, r]) => `<circle cx="${x}" cy="${y}" r="${r}" fill="#2456A6" fill-opacity=".28" stroke="#2456A6" stroke-opacity=".5"/>`).join(''));

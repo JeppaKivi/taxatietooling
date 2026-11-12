@@ -304,7 +304,7 @@ th{font:800 9.5px var(--body);text-transform:uppercase;letter-spacing:.8px;color
         <div class="tabelwrap"><table class="log" id="gtabel"></table></div>
         <p style="margin:16px 0 6px"><b>Recent</b></p><div class="tabelwrap"><table class="log" id="grecent"></table></div>
         <p class="klein" style="margin:8px 0 0">Telt het openen van het hoofdmenu en van elke tool, hoogstens één keer per half uur per tool en klant. Ook nieuwe tools tellen vanzelf mee. Regels ouder dan 12 maanden vervallen automatisch.</p></div>
-        <div class="pane verborgen" data-pane="log" id="logblok"><div class="rij" style="margin:0 0 10px"><span class="klein">laatste 60 wijzigingen</span><select id="logklant" style="flex:0 0 auto;min-width:160px"><option value="">alle klanten</option></select><span id="logkop" class="verborgen"></span></div><div class="tabelwrap"><table class="log" id="logtabel"></table></div></div>
+        <div class="pane verborgen" data-pane="log" id="logblok"><div class="rij" style="margin:0 0 10px"><span class="klein">laatste 60 wijzigingen</span><select id="logtool" style="flex:0 0 auto;min-width:160px"><option value="">alle tools</option></select><select id="logklant" style="flex:0 0 auto;min-width:160px"><option value="">alle klanten</option></select><span id="logkop" class="verborgen"></span></div><div class="tabelwrap"><table class="log" id="logtabel"></table></div></div>
       </div>
     </section>
   </div>
@@ -419,7 +419,7 @@ const magBewerken = t => { const i = (t && t.instellingen) || {}; if (!i.bewerkS
 const magUploaden = t => { const i = (t && t.instellingen) || {}; if (EFF().admin || i.teamUpload) return true;
   return !!i.bewerkSlot && (i.bewerkers || []).map(x => String(x).toLowerCase()).includes(String(EFF().email || '').toLowerCase()); };
 const naamKort = e => ((TEAM.find(x => String(x.email).toLowerCase() === String(e).toLowerCase()) || {}).naam || e).split(' ')[0];
-const bewerkLabel = t => { const i = t.instellingen || {}, l = i.bewerkers || [];
+const bewerkLabel = t => { const i = t.instellingen || {}, isAdm = e => (TEAM.find(x => String(x.email).toLowerCase() === String(e).toLowerCase()) || {}).rol === 'admin', l = (i.bewerkers || []).filter(e => !isAdm(e));   /* beheerder kan altijd aanpassen: niet apart noemen */
   return !i.bewerkSlot ? '● iedereen' : !l.length ? '✎ alleen beheerder' : '✎ ' + esc(l.map(naamKort).join(', ')) + ' + beheerder'; };
 const toegangLabel = t => { const sl = t.instellingen && t.instellingen.slot, n = ((t.instellingen && t.instellingen.toegang) || []).length;
   return !sl ? '● iedereen' : !n ? '🔒 niemand' : '🔒 ' + esc(toegangNamen(t) || (n + ' personen')); };
@@ -954,8 +954,14 @@ function zetLogKlap(){}
 async function laadLog(){
   zetLogKlap(); if (!logOpen()) return;   /* ingeklapt: niets ophalen */
   const sel = $('logklant'), kies = sel.value; sel.innerHTML = '<option value="">alle klanten</option>' + KLANTEN.map(k => `<option value="${esc(k.code)}"${k.code === kies ? ' selected' : ''}>${esc(k.naam)}</option>`).join('');
-  let q = sb.from('logboek').select('*').order('op', {ascending: false}).limit(60); if (kies) q = q.eq('klant_code', kies);
-  const {data} = await q;
+  const selT = $('logtool'), kiesT = selT.value; selT.innerHTML = '<option value="">alle tools</option>' + ALLETOOLS.map(t => `<option value="${esc(t.code)}"${t.code === kiesT ? ' selected' : ''}>${esc(t.naam)}</option>`).join('');
+  let q = sb.from('logboek').select('*').order('op', {ascending: false}).limit(150); if (kies) q = q.eq('klant_code', kies); if (kiesT) q = q.eq('tool_code', kiesT);
+  const {data: ruw} = await q;
+  /* bijwerken van alleen de tegelcijfers (datasets.meta) is geen wijziging van iemand: niet tonen */
+  const metaAlleen = r => r.tabel === 'datasets' && r.actie === 'update' && r.oud && r.nieuw && Object.keys(r.nieuw).every(k => k === 'meta' || JSON.stringify(r.nieuw[k]) === JSON.stringify(r.oud[k]));
+  const data = (ruw || []).filter(r => !metaAlleen(r)).slice(0, 60);
+  const toolNaam = c => (ALLETOOLS.find(t => t.code === c) || {}).naam || c || '';
+  const klantNaam = c => ((KLANTEN_ALLE.length ? KLANTEN_ALLE : KLANTEN).find(k => k.code === c) || {}).naam || c || '';
   const naam = e => (TEAM.find(t => t.email === e) || {}).naam || e;
   const wat = r => { if (r.tabel === 'mt_keuzes'){ const n = r.nieuw || {}, o = r.oud || {}, d = [];
       if (r.actie === 'delete') return 'aanpassingen verwijderd';
@@ -966,12 +972,25 @@ async function laadLog(){
       if (ins ? !!n.toelichting : n.toelichting !== o.toelichting) d.push(n.toelichting ? 'toelichting: “' + String(n.toelichting).slice(0, 60) + '”' : 'toelichting gewist');
       if (!ins && n.status !== o.status) d.push('status ' + n.status);
       return d.join(' · ') || r.actie; }
+    if (r.tabel === 'tool_keuzes'){ const n = (r.nieuw && r.nieuw.data) || {}, o = (r.oud && r.oud.data) || {}, d = [], zelfde = k => JSON.stringify(n[k]) === JSON.stringify(o[k]);
+      if (r.actie === 'delete') return 'aanpassingen verwijderd';
+      if (!zelfde('vs')) d.push(n.vs == null ? 'voorstel gewist' : 'voorstel € ' + nl(n.vs, 2) + '/m²');
+      if (!zelfde('toel')) d.push(n.toel ? 'toelichting: “' + String(n.toel).slice(0, 60) + '”' : 'toelichting gewist');
+      for (const [k, t] of [['uit', 'ref uit'], ['aan', 'ref aan']]) if (!zelfde(k)){ const a = (n[k] || []).length, b = (o[k] || []).length; d.push(a > b ? '+' + (a - b) + ' ' + t : b - a + ' ' + t + ' teruggezet'); }
+      if (!zelfde('R')) d.push(n.R == null ? 'straal auto' : 'straal ' + n.R + ' km');
+      if (!zelfde('top')) d.push(n.top ? 'top ×2: ' + n.top : 'top ×2 uit');
+      if (!zelfde('nader')) d.push(n.nader ? '⚑ nader onderzoek' : '⚑ uit');
+      for (const k of Object.keys(Object.assign({}, n, o))) if (!['vs', 'toel', 'uit', 'aan', 'R', 'top', 'nader'].includes(k) && !zelfde(k)) d.push(k + ' gewijzigd');
+      const st = r.nieuw && r.oud && r.nieuw.status !== r.oud.status ? 'status ' + r.nieuw.status : '';
+      if (st) d.push(st);
+      return d.join(' · ') || (r.actie === 'insert' ? 'aangemaakt' : 'opgeslagen'); }
+    if (r.tabel === 'tool_instellingen') return 'Config gewijzigd';
     if (r.tabel === 'datasets') return 'data gepubliceerd' + (r.nieuw && r.nieuw.snapshot ? ' (' + r.nieuw.snapshot + ')' : '');
     if (r.tabel === 'mt_instellingen') return 'Config gewijzigd'; return r.tabel + ' ' + r.actie; };
-  $('logtabel').innerHTML = '<tr><th>Wanneer</th><th>Wie</th><th>Klant</th><th>Object</th><th>Wat</th></tr>' + (data || []).map(r => `<tr><td class="m">${esc(new Date(r.op).toLocaleString('nl-NL'))}</td><td>${esc(naam(r.door))}</td><td>${esc(r.klant_code || '')}</td><td>${esc(String(r.sleutel || '').split('|')[0])}</td><td>${esc(wat(r))}</td></tr>`).join('')
-    || '<tr><td colspan="5" class="m">nog geen wijzigingen</td></tr>';
+  $('logtabel').innerHTML = '<tr><th>Wanneer</th><th>Wie</th><th>Tool</th><th>Klant</th><th>Object</th><th>Wat</th></tr>' + (data || []).map(r => `<tr><td class="m">${esc(new Date(r.op).toLocaleString('nl-NL'))}</td><td>${esc(naam(r.door))}</td><td>${esc(toolNaam(r.tool_code))}</td><td>${esc(klantNaam(r.klant_code))}</td><td>${esc(String(r.sleutel || '').split('|')[0])}</td><td>${esc(wat(r))}</td></tr>`).join('')
+    || '<tr><td colspan="6" class="m">nog geen wijzigingen</td></tr>';
 }
-$('logklant').addEventListener('change', laadLog);
+$('logklant').addEventListener('change', laadLog); $('logtool').addEventListener('change', laadLog);
 /* ---------- gebruik: wie opent wat (registratie + overzicht voor de beheerder) ---------- */
 function logGebruik(tool = null, klant = null){ try{ sb.rpc('gebruik_log', {p_tool: tool, p_klant: klant}).then(() => {}, () => {}); }catch(e){} }   /* mag nooit het werk blokkeren */
 async function laadGebruik(){

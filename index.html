@@ -414,6 +414,10 @@ const magIn = t => !(t.instellingen && t.instellingen.slot) || ((t.instellingen.
 /* wie kan aanpassen (beoordelingen, toelichtingen, statussen, gedeelde weergaven): instellingen.bewerkSlot + bewerkers; beheerder altijd */
 const magBewerken = t => { const i = (t && t.instellingen) || {}; if (!i.bewerkSlot || EFF().admin) return true;
   return (i.bewerkers || []).map(x => String(x).toLowerCase()).includes(String(EFF().email || '').toLowerCase()); };
+/* data uploaden, publiceren en een nieuwe klant aanmaken: beheerder, het hele team bij 'team uploadt',
+   of wie bij 'wie kan aanpassen' expliciet is aangevinkt (zelfde regel als kern.mag_uploaden in de database) */
+const magUploaden = t => { const i = (t && t.instellingen) || {}; if (EFF().admin || i.teamUpload) return true;
+  return !!i.bewerkSlot && (i.bewerkers || []).map(x => String(x).toLowerCase()).includes(String(EFF().email || '').toLowerCase()); };
 const naamKort = e => ((TEAM.find(x => String(x.email).toLowerCase() === String(e).toLowerCase()) || {}).naam || e).split(' ')[0];
 const bewerkLabel = t => { const i = t.instellingen || {}, l = i.bewerkers || [];
   return !i.bewerkSlot ? '● iedereen' : !l.length ? '✎ alleen beheerder' : '✎ ' + esc(l.map(naamKort).join(', ')) + ' + beheerder'; };
@@ -431,7 +435,7 @@ function toegangPopup(t, knop, soort = 'open'){
     <label class="tp-r"><input type="radio" name="tp-m" value="alle"${sl ? '' : ' checked'}> Iedereen in het team${ED ? ' die de tool kan openen' : ''}</label>
     <label class="tp-r"><input type="radio" name="tp-m" value="sel"${sl ? ' checked' : ''}> Alleen wie hieronder is aangevinkt</label>
     <div class="tp-lijst${sl ? '' : ' uit'}">${leden.map(m => `<label><input type="checkbox" value="${esc(String(m.email).toLowerCase())}"${lijst.includes(String(m.email).toLowerCase()) ? ' checked' : ''}> ${esc(m.naam || m.email)}<span class="klein"> ${esc(m.email)}${m.actief ? '' : ' · uit'}</span></label>`).join('')}</div>
-    <div class="klein tp-noot">${ED ? 'Aanpassen = beoordelingen, toelichtingen, voorstellen, statussen en gedeelde weergaven opslaan. Wie niet is aangevinkt kan de tool wel openen en alles lezen, maar niets opslaan. Beheerders kunnen altijd aanpassen. Nieuwe data uploaden regel je apart (kolom Soort).' : 'De tegel blijft voor iedereen zichtbaar; wie niet is aangevinkt krijgt "Niet voor deze gebruiker beschikbaar". Niemand aangevinkt = voor niemand te openen (ook niet voor jou).'}</div>
+    <div class="klein tp-noot">${ED ? 'Aanpassen = beoordelingen, toelichtingen, voorstellen, statussen en gedeelde weergaven opslaan, en voor deze tool data inlezen, publiceren en nieuwe klanten aanmaken. Wie niet is aangevinkt kan de tool wel openen en alles lezen, maar niets opslaan. Beheerders kunnen altijd aanpassen. Nieuwe data uploaden regel je apart (kolom Soort).' : 'De tegel blijft voor iedereen zichtbaar; wie niet is aangevinkt krijgt "Niet voor deze gebruiker beschikbaar". Niemand aangevinkt = voor niemand te openen (ook niet voor jou).'}</div>
     <div class="tp-knop"><button class="knop klein" data-tp="weg">Annuleren</button><button class="knop klein prim" data-tp="ok">Opslaan</button></div>`;
   document.body.appendChild(pop);
   const r = knop.getBoundingClientRect(), w = 320;
@@ -527,9 +531,9 @@ function renderKlanten(code){
       <span class="v">${d ? `<span>gepubliceerd ${esc(tijd(d.op))}</span>` : ''}${kz && kz.n ? `<span>${kz.n} aanpassing${kz.n === 1 ? '' : 'en'} · laatst ${esc(tijd(kz.op))}</span>` : ''}</span>
       ${kz && (kz.tb || kz.ak) ? `<span class="v">${kz.tb ? `<span class="stpil tb">${kz.tb} ter beoordeling</span>` : ''}${kz.ak ? `<span class="stpil ak">${kz.ak} akkoord</span>` : ''}</span>` : ''}
       <span class="v online" id="online-${esc(k.code)}"></span>
-      ${ADM && d ? `<span class="tegelactie" data-dataklant="${esc(k.code)}" title="tool openen in Data &amp; import om nieuwe data in te lezen en te publiceren">⇪ data bijwerken</span>` : ''}</button>`; }).join('')
-    + (ADM ? '<button class="tegel nieuw" id="nieuweklant">+ Nieuwe klant</button>' : '')
-    + (!lijst.length && !ADM ? '<p class="klein">Nog geen klanten met data voor deze tool.</p>' : '');
+      ${(ADM || magUploaden(tool)) && d ? `<span class="tegelactie" data-dataklant="${esc(k.code)}" title="tool openen in Data &amp; import om nieuwe data in te lezen en te publiceren">⇪ data bijwerken</span>` : ''}</button>`; }).join('')
+    + (ADM || magUploaden(tool) ? '<button class="tegel nieuw" id="nieuweklant">+ Nieuwe klant</button>' : '')
+    + (!lijst.length && !ADM && !magUploaden(tool) ? '<p class="klein">Nog geen klanten met data voor deze tool.</p>' : '');
   $('klanten').querySelectorAll('[data-klant]').forEach(b => b.onclick = e => openTool(tool, b.dataset.klant, e.target.closest('[data-dataklant]') ? 'data' : null));
   $('klanten').querySelectorAll('[data-sub]').forEach(b => b.onclick = () => { const t = TOOLS.find(x => x.code === b.dataset.sub); if (t && !magIn(t)) return alert('Niet voor deze gebruiker beschikbaar.'); if (t) openTool(t, 'algemeen'); });
   /* nieuwe klant: de tegel zelf wordt het invoerveld (geen pop-up); bestaande klant (bv. van een andere tool) wordt hergebruikt */
@@ -724,7 +728,7 @@ function maakApi(tool, klant, ds, bytes){
   const fout = e => { throw new Error(e && e.message ? e.message : String(e)); };
   const ik = {email: IK.email, naam: IK.naam, admin: EFF().admin,
     /* nieuwe dataversies uploaden: beheerder, of het hele team als dat per tool aanstaat (Beheer → Tools) */
-    uploaden: EFF().admin || !!(tool.instellingen && tool.instellingen.teamUpload),
+    uploaden: magUploaden(tool),
     /* opslaan van beoordelingen, toelichtingen, statussen en weergaven (Beheer → Tools → Wie kan aanpassen) */
     bewerken: magBewerken(tool)};
   const leesFout = () => fout({message: 'Je hebt in ' + tool.naam + ' alleen leesrechten. Vraag Jesper om aanpasrechten.'});

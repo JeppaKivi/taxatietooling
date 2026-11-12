@@ -6,8 +6,7 @@
 <title>Taxatietooling</title>
 <meta name="robots" content="noindex, nofollow">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.min.js"></script>
-<!-- gedeelde rekenkern modelmatige factor (Controletool, Parameterlab, Vergelijk portefeuilles) -->
-<script src="kern/mf.js?v=2"></script>
+<!-- gedeelde rekenkern modelmatige factor: staat afgeschermd in Supabase (kern.rekenkern) en laadt pas na inloggen (laadKern) -->
 <style>
 :root{
   --canvas:#E7EBEF; --paper:#FBFCFD; --paper-dim:#F0F3F6; --card:#FFFFFF;
@@ -359,6 +358,13 @@ $('inlogform').addEventListener('submit', async e => {
 });
 $('uitlog').addEventListener('click', async () => { await sb.auth.signOut(); location.hash = ''; location.reload(); });
 
+/* rekenkern (MF + aandachtsscore) alleen voor ingelogde teamleden: uit Supabase (rpc kern_code), niet meer als openbaar bestand */
+async function laadKern(){
+  for (let i = 0; i < 2 && !window.TTKERN; i++){
+    try{ const {data, error} = await sb.rpc('kern_code'); if (error) throw error; if (data && data.code) (new Function(data.code))(); }
+    catch(e){ console.warn('rekenkern laden mislukt', e); }
+  }
+}
 async function naInloggen(){
   toon('laden'); $('ladentekst').textContent = 'hoofdmenu laden…';
   const {data: u} = await sb.auth.getUser();
@@ -369,7 +375,7 @@ async function naInloggen(){
   if (!mij || !mij.actief){ await sb.auth.signOut(); toon('inlog'); $('inlogmsg').innerHTML = '<div class="melding fout">Dit mailadres heeft (nog) geen toegang. Vraag Jesper.</div>'; return; }
   IK.naam = mij.naam || IK.email; IK.admin = mij.rol === 'admin';
   renderWie(); pasIndelingToe();
-  await laadMenu(); logGebruik(); onlineStart();
+  await Promise.all([laadMenu(), laadKern()]); logGebruik(); onlineStart();
   const h = decodeURIComponent(location.hash.slice(1)).split('/');
   if (h[0] && h[1]){ const tool = TOOLS.find(x => x.code === h[0]); if (tool) return openTool(tool, h[1]); }
   toon('menu');
@@ -706,7 +712,7 @@ async function openTool(tool, klantCode, startView = null){
     if (!ds && !zonderData){ if (!EFF().admin) throw new Error('Voor deze klant is nog geen data gepubliceerd.');
       ds = DATASETS.find(d => d.tool_code === tool.code) || null; leeg = true;
       if (!ds && tool.code === 'markthuur_wonen') throw new Error('Er is nog geen basisdataset voor deze tool.'); }
-    const [{data: lijst}, bytes, vl] = await Promise.all([sb.storage.from('apps').list(tool.app_pad.split('/').slice(0, -1).join('/') || tool.code), ds ? haal('data', ds.bestand, false) : Promise.resolve(null), voorlaad(tool.code, klantCode)]);
+    const [{data: lijst}, bytes, vl] = await Promise.all([sb.storage.from('apps').list(tool.app_pad.split('/').slice(0, -1).join('/') || tool.code), ds ? haal('data', ds.bestand, false) : Promise.resolve(null), voorlaad(tool.code, klantCode), window.TTKERN ? null : laadKern()]);
     const gz = ds && /\.json\.gz$/.test(ds.bestand) ? bytes : null;
     /* app-versie: altijd de nieuwste (cache op pad + tijdstempel van het bestand) */
     const app = (lijst || []).find(f => f.name === tool.app_pad.split('/').pop());

@@ -550,7 +550,7 @@ function renderKlanten(code){
       let kc = best ? best.code : c;
       if (!best){ $('nk-info').textContent = 'klant wordt aangemaakt…'; const r = await sb.from('klanten').insert({code: kc, naam}); if (r.error){ $('nk-info').textContent = 'Toevoegen mislukt: ' + r.error.message; return; } await laadMenu(); }
       // de tool opent op het dashboard met het venster om de aanlevering in te lezen; de tegel verschijnt na publiceren
-      openTool(tool, kc, tool === 'bog_mog_zog' ? null : 'data'); };
+      openTool(tool, kc, tool.code === 'bog_mog_zog' ? null : 'data'); };
     inp.onkeydown = e => { e.stopPropagation(); if (e.key === 'Enter') maak(); if (e.key === 'Escape') annuleer(); };
     inp.onclick = e => e.stopPropagation();
     $('nk-ok').onclick = maak; $('nk-af').onclick = annuleer;

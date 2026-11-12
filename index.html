@@ -976,7 +976,7 @@ async function laadLog(){
       if (r.actie === 'delete') return 'aanpassingen verwijderd';
       if (!zelfde('vs')) d.push(n.vs == null ? 'voorstel gewist' : 'voorstel € ' + nl(n.vs, 2) + '/m²');
       if (!zelfde('toel')) d.push(n.toel ? 'toelichting: “' + String(n.toel).slice(0, 60) + '”' : 'toelichting gewist');
-      for (const [k, t] of [['uit', 'ref uit'], ['aan', 'ref aan']]) if (!zelfde(k)){ const a = (n[k] || []).length, b = (o[k] || []).length; d.push(a > b ? '+' + (a - b) + ' ' + t : b - a + ' ' + t + ' teruggezet'); }
+      for (const [k, meer, minder] of [['uit', 'ref uitgezet', 'ref weer aangezet'], ['aan', 'ref toegevoegd', 'toegevoegde ref weggehaald']]) if (!zelfde(k)){ const a = (n[k] || []).length, b = (o[k] || []).length; d.push(a > b ? (a - b) + ' ' + meer : (b - a) + ' ' + minder); }
       if (!zelfde('R')) d.push(n.R == null ? 'straal auto' : 'straal ' + n.R + ' km');
       if (!zelfde('top')) d.push(n.top ? 'top ×2: ' + n.top : 'top ×2 uit');
       if (!zelfde('nader')) d.push(n.nader ? '⚑ nader onderzoek' : '⚑ uit');

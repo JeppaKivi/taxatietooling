@@ -7,7 +7,7 @@
 <meta name="robots" content="noindex, nofollow">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.min.js"></script>
 <!-- gedeelde rekenkern modelmatige factor (Controletool, Parameterlab, Vergelijk portefeuilles) -->
-<script src="kern/mf.js?v=1"></script>
+<script src="kern/mf.js?v=2"></script>
 <style>
 :root{
   --canvas:#E7EBEF; --paper:#FBFCFD; --paper-dim:#F0F3F6; --card:#FFFFFF;
@@ -86,7 +86,7 @@ body.tb-slepen,body.tb-slepen *{cursor:grabbing !important;user-select:none}
 .blok.dicht > .paneel, .blok.dicht #logklant, .blok.dicht > header .klein{display:none}
 .tegel .tel{display:flex;gap:12px;align-items:baseline;margin:6px 0 2px;font-size:12.5px;color:var(--ink-soft)}
 .tegel .tel b{font:800 20px var(--body);font-variant-numeric:tabular-nums;margin-right:4px}
-.tegel .tel .g b{color:var(--ok)} .tegel .tel .a b{color:var(--bad)}
+.tegel .tel .g b{color:var(--ok)} .tegel .tel .a b{color:var(--bad)} .tegel .tel .n b{color:var(--ink-soft);font-size:15px}
 .greep{cursor:grab;color:var(--ink-soft);opacity:0;font-size:14px;line-height:1;user-select:none;padding:2px 3px;border-radius:4px;transition:opacity .15s}
 .blok:hover .greep{opacity:.8}
 .greep:hover{background:var(--paper-dim);opacity:1}
@@ -503,7 +503,7 @@ function klantRegel(d){
   const m = d.meta || {}, t = m.tel;
   if (t && t.goed != null) return `<span class="o">${esc(t.versie || m.versie || '')}${t.n ? ' · ' + nl(t.n) + ' complexen' : ''}</span>
     <span class="balk"><i style="width:${(t.goed / Math.max(1, t.goed + t.aand) * 100).toFixed(1)}%"></i><i style="width:${(t.aand / Math.max(1, t.goed + t.aand) * 100).toFixed(1)}%"></i></span>
-    <span class="tel"><span class="g"><b>${nl(t.goed)}</b>goed</span><span class="a"><b>${nl(t.aand)}</b>aandacht</span></span>`;
+    <span class="tel"><span class="g"><b>${nl(t.goed)}</b>goed</span><span class="a"><b>${nl(t.aand)}</b>aandacht</span>${t.ntg ? `<span class="n" title="geen modelmatige factor (bijv. studenteneenheden) — niet getoetst"><b>${nl(t.ntg)}</b>niet getoetst</span>` : ''}</span>`;
   /* BOG/MOG/ZOG: complexen en eenheden, en een balk met het oordeel (voorzet = nog geen eigen markthuur) */
   if (d.tool_code === 'bog_mog_zog'){
     const n = t ? t.n : m.complexen, v = t ? t.vhe : m.vhe;
@@ -745,6 +745,10 @@ function maakApi(tool, klant, ds, bytes){
     bytes: () => bytes,
     /* eerdere publicaties van deze klant × tool (nieuwste eerst) en een daarvan ophalen */
     async pakketten(){ return DATASETS.filter(d => d.tool_code === T && d.klant_code === K).map(d => ({id: d.id, op: d.op, bytes: d.bytes, snapshot: d.snapshot, meta: d.meta || {}})); },
+    /* idem, maar vers uit de database (vóór publiceren: heeft een collega intussen een nieuwere versie gepubliceerd?) */
+    async pakkettenVers(){ const {data, error} = await sb.from('datasets').select('id, klant_code, tool_code, snapshot, bestand, bytes, meta, door, op, status').eq('status', 'gepubliceerd').eq('tool_code', T).eq('klant_code', K).order('op', {ascending: false}).limit(10); if (error) fout(error);
+      for (const d of (data || []).slice().reverse()) if (!DATASETS.find(x => x.id === d.id)) DATASETS.unshift(d);
+      return (data || []).map(d => ({id: d.id, op: d.op, bytes: d.bytes, snapshot: d.snapshot, meta: d.meta || {}, door: d.door})); },
     async jsonVan(id){ const d = DATASETS.find(x => x.id === id && x.tool_code === T && x.klant_code === K); if (!d) return null;
       const b = await haal('data', d.bestand, false, d.op); const st = /\.gz$/.test(d.bestand) ? new Blob([b]).stream().pipeThrough(new DecompressionStream('gzip')) : new Blob([b]).stream();
       return JSON.parse(await new Response(st).text()); },

@@ -4,9 +4,12 @@
    De formule staat hier; de parameters (de "leidende set") komen uit het Parameterlab
    (Supabase: mf_vigerend). Wijzig deze kern alleen samen met een nieuwe KERN_VERSIE.
    Bron: Controletool 1.68 (REKENKERN MFv2, gevalideerd tegen werkmap TC_WON 2025 v1.1: 201/201 exact).
+   Kern 2 (Controletool 1.83): studenteneenheden krijgen zoals in de werkmap geen MF ("STD") en dus geen score;
+   oude LW-labeltabel wordt op waarde herkend (volgorde van de sleutels maakt niet meer uit);
+   segmentgrenzen: ongewijzigd (werkmap 148 / 808,04) tot het besluit over de grenzen 2025/2026.
    ========================================================================================== */
 (function(g){
-  const KERN_VERSIE = '1';
+  const KERN_VERSIE = '2';
   /* standaardset = vigerend 2025 (zoals in de werkmap); alleen terugval als het platform geen leidende set levert */
   const MF_STD = {
     jaar: '2025', indexatie: 0.025,
@@ -72,8 +75,10 @@
     };
     return c._inp;
   }
+  /* werkmap (configTypeWoning): woningtype Studenteneenheid -> MF "STD", geen toetsing */
+  const isStd = x => !!x && String(x.typeInv || x.type || '').trim().toLowerCase() === 'studenteneenheid';
   function mfBereken(inp, cfg){
-    if (inp.hlw == null) return null;
+    if (inp.hlw == null || isStd(inp)) return null;
     const basis = mfBasis(inp.hlw, cfg);
     let fLab = cfg.labels[inp.lab];
     if (fLab == null) fLab = inp.fallbackLab || 0;   /* BENG/NOM zonder labelstring */
@@ -94,6 +99,7 @@
   /* complex (pakketrij) herrekenen met de leidende set: MF, KF-band, afwijking, opbouw. De invoer blijft die van de import. */
   function herreken(c, cfg){
     let inp; try{ inp = complexInput(c); }catch(e){ return false; }
+    if (inp && (isStd(inp) || isStd(c))){ c.mf = null; c.basis = null; c.kfmin = null; c.kfmax = null; c.afw = 0; c.std = true; return true; }
     if (!inp || inp.hlw == null) return false;
     const R = mfBereken(inp, cfg); if (!R || !isFinite(R.mf) || !(R.mf > 0)) return false;
     c.mf = R.mf; c.basis = R.basis;
@@ -113,14 +119,20 @@
     ekMin: 30, ekMax: 55,
     lw: {'A++': [null, null], 'A+': [null, null], 'A': [null, null], 'B': [null, null], 'C': [null, null], 'DG': [null, null]},
   };
+  /* configs van 1.38-1.43 bevatten de oude voorlopige LW-labeltabel als 'waarde': die telt niet als bewuste overschrijving */
+  const OUD_LW = {'A++': [62.5, 77.5], 'A+': [60, 77.5], 'A': [57.5, 75], 'B': [55, 72.5], 'C': [52.5, 70], 'DG': [50, 67.5]};
+  function isOudLW(lw){
+    if (!lw || typeof lw !== 'object') return false;
+    const k1 = Object.keys(lw).sort(), k2 = Object.keys(OUD_LW).sort();
+    return k1.join('|') === k2.join('|') && k2.every(k => Array.isArray(lw[k]) && lw[k][0] === OUD_LW[k][0] && lw[k][1] === OUD_LW[k][1]);
+  }
   function tcfgVan(opgeslagen){
     const T = diep(TCFG_DEF);
     try{
       const _tc = opgeslagen;
       if (_tc){ for (const k in TCFG_DEF) if (_tc[k] != null) T[k] = _tc[k]; }
-      const _oudLW = JSON.stringify({'A++': [62.5, 77.5], 'A+': [60, 77.5], 'A': [57.5, 75], 'B': [55, 72.5], 'C': [52.5, 70], 'DG': [50, 67.5]});
-      if (T.lw && JSON.stringify(T.lw) === _oudLW) T.lw = diep(TCFG_DEF.lw);
-      if (T.segWws === 144 && T.segHuur === 900.07){ T.segWws = TCFG_DEF.segWws; T.segHuur = TCFG_DEF.segHuur; }
+      if (isOudLW(T.lw)) T.lw = diep(TCFG_DEF.lw);
+      if (T.segWws === 144 && T.segHuur === 900.07){ T.segWws = TCFG_DEF.segWws; T.segHuur = TCFG_DEF.segHuur; }   /* oude standaard 1.42-1.43; vervalt bij het besluit over de segmentgrenzen */
     }catch(e){}
     return T;
   }
@@ -182,5 +194,5 @@
     const sc = aandachtScore(r, r.o2 || {}, T); return sc ? {aan: sc.dv >= (T || TCFG_DEF).aandacht, sc} : null;
   }
   g.TTKERN = {KERN_VERSIE, MF_STD, vulAan, mfBasis, hlwUitBasis, bjKlasse, complexInput, mfBereken, herreken,
-    TCFG_DEF, tcfgVan, lwBandCfg, rBasis, KFMH_BAND, LABGRP_SCORE, aandachtScore, isAandacht};
+    TCFG_DEF, tcfgVan, isOudLW, isStd, lwBandCfg, rBasis, KFMH_BAND, LABGRP_SCORE, aandachtScore, isAandacht};
 })(typeof window !== 'undefined' ? window : globalThis);

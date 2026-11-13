@@ -109,6 +109,16 @@ body.sleept-blok{user-select:none;cursor:grabbing}
 .profielknop.kan:hover{border-color:var(--hair2);background:var(--card)}
 .profielmenu{display:none;position:absolute;right:0;top:calc(100% + 6px);z-index:20;background:var(--card);border:1px solid var(--hairline);border-radius:12px;box-shadow:0 12px 34px rgba(15,25,40,.2);padding:6px;min-width:280px}
 .profielmenu.open{display:block}
+.hlmenu{min-width:330px}
+.hlmenu button{display:flex;width:100%;align-items:baseline;gap:8px;text-align:left;border:0;background:none;padding:7px 8px;border-radius:8px;cursor:pointer;color:var(--ink);font:500 13px var(--body)}
+.hlmenu button:hover{background:var(--paper-dim)}
+.hlmenu button .d{margin-left:auto;color:var(--ink-soft);font-size:11px;white-space:nowrap}
+.hlmenu button .nw{font:800 9px var(--body);letter-spacing:.5px;text-transform:uppercase;color:#fff;background:#F26430;border-radius:99px;padding:1px 6px}
+.hlmenu .leeg{padding:8px;color:var(--ink-soft);font-size:12px}
+.tb-hl{display:flex;flex-direction:column;gap:3px;font-size:11.5px}
+.tb-hl .r{display:flex;gap:6px;align-items:center}
+.tb-hl .r a{cursor:pointer;color:var(--ink)} .tb-hl .r .x{cursor:pointer;color:var(--ink-soft);margin-left:auto} .tb-hl .r .x:hover{color:var(--bad)}
+.tegel .mthist{display:block;margin-top:6px}
 #onlineknop .stip{display:inline-block;width:7px;height:7px;border-radius:50%;background:#86D7A2;margin-right:6px;vertical-align:1px}
 #onlineknop.leeg .stip{background:rgba(255,255,255,.4)}
 .onlinemenu{min-width:300px}
@@ -265,6 +275,7 @@ th{font:800 9.5px var(--body);text-transform:uppercase;letter-spacing:.8px;color
         <div class="profiel verborgen" id="onlinewrap"><button class="knop klein" id="onlineknop" title="wie is er nu ingelogd (alleen zichtbaar voor jou)"></button><div class="profielmenu onlinemenu" id="onlinemenu"></div></div>
         <div class="profiel"><button class="profielknop" id="wie"></button><div class="profielmenu" id="profielmenu"></div></div>
         <button class="knop klein" id="thema" title="licht of donker">◑ Donker</button>
+        <div class="profiel"><button class="knop klein" id="hlknop" title="handleidingen per tool">Handleiding ▾</button><div class="profielmenu hlmenu" id="hlmenu"></div></div>
         <button class="knop klein" id="uitlog">Uitloggen</button>
       </div>
     </div>
@@ -522,6 +533,18 @@ function klantRegel(d){
     return kop + `<span class="balk4">${del.map(([k, kl]) => `<i style="flex:${t[k]};background:${kl}"></i>`).join('')}</span>
       <span class="tel4">${del.map(([k, kl, nm]) => `<span><b style="color:${kl}">${nl(t[k])}</b>${nm}</span>`).join('')}</span>`;
   }
+  /* Markthuur wonen: oordeelbalk (groen / verklaard / oranje / rood) en een histogram van de afwijking tabel t.o.v. referenties */
+  if (d.tool_code === 'markthuur_wonen'){
+    const kop = `<span class="o">${esc(d.snapshot || '')}${(t ? t.n : m.complexen) != null ? ' · ' + nl(t ? t.n : m.complexen) + ' complexen' : ''}${(t ? t.vhe : m.vhe) ? ' · ' + nl(t ? t.vhe : m.vhe) + ' VHE' : ''}</span>`;
+    if (!t || t.ok == null) return kop + '<span class="o klein"><i>oordeel verschijnt na de eerstvolgende keer openen</i></span>';
+    const del = [['ok', 'var(--ok)', 'groen'], ['vk', '#4E9C93', 'verklaard'], ['warn', 'var(--warn)', 'oranje'], ['bad', 'var(--bad)', 'rood']].filter(x => t[x[0]] > 0);
+    const H = t.hist || [], mx = Math.max(1, ...H), tg = t.tolG || 15, to = t.tolO || 20;
+    const hist = H.length ? `<svg class="mthist" viewBox="0 0 200 46" width="100%" height="46" preserveAspectRatio="none" aria-hidden="true">${H.map((n, i) => { const c = (i - 6) * 5, kl = Math.abs(c) <= tg ? 'var(--ok)' : Math.abs(c) <= to ? 'var(--warn)' : 'var(--bad)', h = n ? Math.max(1.5, n / mx * 34) : 0;
+      return `<rect x="${(4 + i * 14.8).toFixed(1)}" y="${(36 - h).toFixed(1)}" width="11" height="${h.toFixed(1)}" rx="1.5" fill="${kl}" fill-opacity="${i === 6 ? 1 : .8}"><title>${c > 0 ? '+' : ''}${c}%: ${n} complexen</title></rect>`; }).join('')}<line x1="99.6" x2="99.6" y1="0" y2="37" stroke="var(--ink)" stroke-width=".8" stroke-dasharray="2 2"/><line x1="2" x2="198" y1="36.5" y2="36.5" stroke="var(--hair2)" stroke-width=".8"/><text x="2" y="45" font-size="7" fill="var(--ink-soft)">−30%</text><text x="100" y="45" font-size="7" fill="var(--ink-soft)" text-anchor="middle">tabel = refs</text><text x="198" y="45" font-size="7" fill="var(--ink-soft)" text-anchor="end">+30%</text></svg>` : '';
+    return kop + `<span class="balk4">${del.map(([k, kl]) => `<i style="flex:${t[k]};background:${kl}"></i>`).join('')}</span>
+      <span class="tel4">${del.map(([k, kl, nm]) => `<span><b style="color:${kl}">${nl(t[k])}</b>${nm}</span>`).join('')}</span>${hist}
+      ${t.afw != null ? `<span class="o klein">tabel t.o.v. referenties: <b>${t.afw > 0 ? '+' : ''}${nl(t.afw * 100, 1)}%</b> over de hele portefeuille${t.vs ? ' · ' + nl(t.vs) + ' met voorstel' : ''}</span>` : ''}`;
+  }
   if (d.tool_code === 'controle_marktwaarde') return `<span class="o">${esc(m.versie || '')}${m.n ? ' · ' + nl(m.n) + ' complexen' : ''}${m.versie || m.n ? '' : esc(String(d.snapshot).slice(0, 60))}</span><span class="o klein"><i>goed / aandacht verschijnt na de eerstvolgende keer openen</i></span>`;
   return `<span class="o">Data ${esc(d.snapshot)}${m.vhe ? ' · ' + nl(m.vhe) + ' eenheden' : ''}</span>`;
 }
@@ -571,6 +594,21 @@ function renderKlanten(code){
   $('klantblok').scrollIntoView({behavior: 'smooth', block: 'nearest'}); pasIndelingToe();
   volgOnline(code, lijst.map(k => k.code));
 }
+
+/* ---------- handleidingen: per tool in tools.instellingen.handleidingen [{naam, pad, datum, bytes}], pdf in bucket apps ---------- */
+const hlLijst = t => (t.instellingen && Array.isArray(t.instellingen.handleidingen)) ? t.instellingen.handleidingen : [];
+async function openHandleiding(pad, w){
+  const {data, error} = await sb.storage.from('apps').createSignedUrl(pad, 300);
+  if (error || !data){ if (w) w.close(); return alert('Handleiding openen lukt niet: ' + (error ? error.message : 'onbekend')); }
+  if (w) w.location = data.signedUrl; else location.href = data.signedUrl; }
+$('hlknop').addEventListener('click', e => { e.stopPropagation(); const m = $('hlmenu'), lijst = toolVolgorde().filter(t => hlLijst(t).length);
+  const nieuw = d => d && (Date.now() - new Date(d)) < 14 * 864e5;
+  m.innerHTML = lijst.length ? lijst.map(t => `<div class="kopje">${esc(t.naam)}</div>` + hlLijst(t).map((h, i) => `<button data-hl="${esc(t.code)}|${i}"><span>${esc(h.naam)}</span>${nieuw(h.datum) ? '<span class="nw">nieuw</span>' : ''}<span class="d">${esc(new Date(h.datum).toLocaleDateString('nl-NL', {day: 'numeric', month: 'short', year: 'numeric'}))}</span></button>`).join('')).join('')
+    : '<div class="leeg">Nog geen handleidingen.</div>';
+  m.querySelectorAll('[data-hl]').forEach(b => b.onclick = () => { const [c, i] = b.dataset.hl.split('|'), t = ALLETOOLS.find(x => x.code === c), h = t && hlLijst(t)[+i]; if (!h) return;
+    const w = window.open('', '_blank'); if (w) w.document.write('<p style="font:14px sans-serif;padding:20px">Handleiding wordt geopend…</p>'); m.classList.remove('open'); openHandleiding(h.pad, w); });
+  m.classList.toggle('open'); });
+document.addEventListener('click', e => { if (!e.target.closest('#hlknop') && !e.target.closest('#hlmenu')) $('hlmenu').classList.remove('open'); });
 
 /* ---------- wat is er nieuw per tool ---------- */
 function toonNieuw(code){
@@ -894,12 +932,14 @@ function sleepTool(e, greep){
 }
 function renderToolBeheer(){
   $('nt-codes').innerHTML = BINNENKORT.filter(([c]) => !ALLETOOLS.find(t => t.code === c)).map(([c, n]) => `<option value="${esc(c)}">${esc(n)}</option>`).join('');
-  $('tooltabel').innerHTML = '<colgroup><col style="width:21%"><col style="width:10%"><col style="width:5%"><col style="width:13%"><col style="width:6%"><col style="width:10.5%"><col style="width:10.5%"><col></colgroup><tr><th>Tool</th><th>Code</th><th>Versie</th><th>Soort</th><th>Status</th><th>Wie kan erin</th><th>Wie kan aanpassen</th><th>Nieuwe versie uploaden</th></tr>' + toolVolgorde().map((t, _i, L) => { const H = L.filter(x => !(x.instellingen && x.instellingen.onder)); const og = t.instellingen && t.instellingen.onder; return `<tr class="${og ? 'tb-sub' : ''}" data-tgroep="${esc(og || t.code)}"${og ? '' : ` data-thoofd="${esc(t.code)}"`}>
+  $('tooltabel').innerHTML = '<colgroup><col style="width:17%"><col style="width:9%"><col style="width:5%"><col style="width:12%"><col style="width:6%"><col style="width:10%"><col style="width:10%"><col style="width:15%"><col></colgroup><tr><th>Tool</th><th>Code</th><th>Versie</th><th>Soort</th><th>Status</th><th>Wie kan erin</th><th>Wie kan aanpassen</th><th>Handleidingen</th><th>Nieuwe versie uploaden</th></tr>' + toolVolgorde().map((t, _i, L) => { const H = L.filter(x => !(x.instellingen && x.instellingen.onder)); const og = t.instellingen && t.instellingen.onder; return `<tr class="${og ? 'tb-sub' : ''}" data-tgroep="${esc(og || t.code)}"${og ? '' : ` data-thoofd="${esc(t.code)}"`}>
     <td><div class="tb-naam">${t.instellingen && t.instellingen.onder ? '<span class="tb-hang" title="hangt altijd onder ' + esc((ALLETOOLS.find(x => x.code === t.instellingen.onder) || {}).naam || '') + '">↳</span>' : ''}<b${t.instellingen && t.instellingen.onder ? '' : ` class="tb-sleep" data-tsleep="${esc(t.code)}" title="ingedrukt houden en slepen om de volgorde te wijzigen"`}>${esc(t.naam)}</b></div><div class="klein tb-oms" title="${esc(t.omschrijving || '')}">${esc(t.omschrijving || '')}</div></td><td class="klein">${esc(t.code)}</td><td>${esc(t.versie || '–')}</td>
     <td class="klein">${t.instellingen && t.instellingen.onder ? 'eerste tegel onder ' + esc((ALLETOOLS.find(x => x.code === t.instellingen.onder) || {}).naam || t.instellingen.onder) : t.instellingen && t.instellingen.klantloos ? 'zonder klant' : 'per klant<div style="margin-top:4px"><button class="knop klein" data-tteam="' + esc(t.code) + '" title="Mogen teamleden zelf nieuwe dataversies uploaden voor bestaande klanten?">' + (t.instellingen && t.instellingen.teamUpload ? '● team uploadt' : '○ alleen beheerder uploadt') + '</button></div>'}</td>
     <td><button class="knop klein" data-tactief="${esc(t.code)}">${t.actief ? '● aan' : '○ uit'}</button></td>
     <td><button class="knop klein tb-toeg${t.instellingen && t.instellingen.slot ? ' dicht' : ''}" data-ttoeg="${esc(t.code)}" title="Kies wie deze tool kan openen. De tegel blijft voor iedereen zichtbaar.">${toegangLabel(t)}</button></td>
     <td><button class="knop klein tb-toeg${t.instellingen && t.instellingen.bewerkSlot ? ' dicht' : ''}" data-tbewerk="${esc(t.code)}" title="Kies wie in deze tool mag opslaan (beoordelingen, toelichtingen, statussen). Anderen kunnen alleen lezen.">${bewerkLabel(t)}</button></td>
+    <td><div class="tb-hl">${hlLijst(t).map((h, i) => `<span class="r"><a data-hlopen="${esc(t.code)}|${i}" title="klik = openen · dubbelklik = naam wijzigen">📄 ${esc(h.naam)}</a><span class="klein">${esc(new Date(h.datum).toLocaleDateString('nl-NL', {day: 'numeric', month: 'short'}))}</span><span class="x" data-hlweg="${esc(t.code)}|${i}" title="verwijderen">✕</span></span>`).join('')}
+      <label class="knop klein" style="align-self:flex-start;cursor:pointer" title="PDF uploaden. Zelfde naam als een bestaande handleiding = die wordt vervangen door de nieuwe versie.">＋ PDF<input type="file" accept="application/pdf,.pdf" data-hlnieuw="${esc(t.code)}" hidden></label></div></td>
     <td>${(t.app_pad || '').split('/')[0] !== t.code && ALLETOOLS.find(x => x.code === (t.app_pad || '').split('/')[0]) ? `<div class="klein" style="margin-bottom:4px">gebruikt nu de app van <b>${esc(ALLETOOLS.find(x => x.code === t.app_pad.split('/')[0]).naam)}</b> — een eigen upload maakt hem los</div>` : ''}<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><input type="file" accept=".html,text/html" data-tbestand="${esc(t.code)}" style="max-width:210px;font-size:11px">
       <input data-tversie="${esc(t.code)}" placeholder="versie" style="width:70px;padding:5px 7px;border:1px solid var(--hair2);border-radius:7px;background:var(--paper);color:var(--ink)">
       <button class="knop klein prim" data-tupload="${esc(t.code)}">Uploaden</button></div></td></tr>`; }).join('');
@@ -909,6 +949,27 @@ function renderToolBeheer(){
   $('tooltabel').querySelectorAll('[data-ttoeg]').forEach(b => b.onclick = e => { e.stopPropagation(); toegangPopup(ALLETOOLS.find(x => x.code === b.dataset.ttoeg), b); });
   $('tooltabel').querySelectorAll('[data-tbewerk]').forEach(b => b.onclick = e => { e.stopPropagation(); toegangPopup(ALLETOOLS.find(x => x.code === b.dataset.tbewerk), b, 'bewerk'); });
   $('tooltabel').querySelectorAll('[data-tsleep]').forEach(b => b.onpointerdown = e => sleepTool(e, b));
+  /* handleidingen: uploaden (zelfde naam = vervangen), openen, verwijderen */
+  const hlBewaar = async (t, lijst) => { const inst = Object.assign({}, t.instellingen || {}, {handleidingen: lijst}); const r = await sb.from('tools').update({instellingen: inst}).eq('code', t.code); if (r.error) throw r.error; };
+  $('tooltabel').querySelectorAll('[data-hlnieuw]').forEach(inp => inp.onchange = async () => { const f = inp.files[0], t = ALLETOOLS.find(x => x.code === inp.dataset.hlnieuw), m = x => $('nt-msg').innerHTML = x; if (!f || !t) return;
+    if (!/\.pdf$/i.test(f.name) && f.type !== 'application/pdf') return m('<div class="melding fout">Kies een PDF-bestand.</div>');
+    const naam = f.name.replace(/\.pdf$/i, '').replace(/[_]+/g, ' ').replace(/^handleiding\s*/i, '').trim() || 'Handleiding';   /* naam aanpassen: dubbelklik op de naam */
+    m(`<div class="melding">${esc(f.name)} wordt geüpload…</div>`);
+    try{ const lijst = hlLijst(t).slice(), i = lijst.findIndex(h => h.naam.toLowerCase() === naam.toLowerCase()), pad = `handleiding/${t.code}/${Date.now()}.pdf`;
+      const up = await sb.storage.from('apps').upload(pad, f, {contentType: 'application/pdf', upsert: false}); if (up.error) throw up.error;
+      const h = {naam, pad, datum: new Date(f.lastModified || Date.now()).toISOString(), bytes: f.size}; const oud = i >= 0 ? lijst[i].pad : null; if (i >= 0) lijst[i] = h; else lijst.push(h);
+      await hlBewaar(t, lijst); if (oud) await sb.storage.from('apps').remove([oud]);
+      m(`<div class="melding ok">Handleiding “${esc(naam)}” ${i >= 0 ? 'vervangen door de nieuwe versie' : 'toegevoegd'}. Staat nu in het menu Handleiding.</div>`); await laadMenu();
+    }catch(e){ m(`<div class="melding fout">${esc(e.message || e)}</div>`); } });
+  $('tooltabel').querySelectorAll('[data-hlopen]').forEach(a => { let tm = 0;
+    a.onclick = () => { clearTimeout(tm); tm = setTimeout(() => { const [c, i] = a.dataset.hlopen.split('|'), h = hlLijst(ALLETOOLS.find(x => x.code === c))[+i]; const w = window.open('', '_blank'); openHandleiding(h.pad, w); }, 260); };
+    a.ondblclick = () => { clearTimeout(tm); const [c, i] = a.dataset.hlopen.split('|'), t = ALLETOOLS.find(x => x.code === c), lijst = hlLijst(t).slice(), h = lijst[+i];
+      const inp = document.createElement('input'); inp.value = h.naam; inp.style.cssText = 'font:inherit;padding:2px 5px;border:1px solid var(--hair2);border-radius:6px;width:100%'; a.replaceWith(inp); inp.focus(); inp.select();
+      let klaar = false; const bewaar = async ok => { if (klaar) return; klaar = true; const n = inp.value.trim(); if (ok && n && n !== h.naam){ lijst[+i] = Object.assign({}, h, {naam: n}); try{ await hlBewaar(t, lijst); }catch(e){ $('nt-msg').innerHTML = `<div class="melding fout">${esc(e.message || e)}</div>`; } } await laadMenu(); };
+      inp.onkeydown = e => { if (e.key === 'Enter') bewaar(true); if (e.key === 'Escape') bewaar(false); }; inp.onblur = () => bewaar(true); }; });
+  $('tooltabel').querySelectorAll('[data-hlweg]').forEach(a => a.onclick = async () => { const [c, i] = a.dataset.hlweg.split('|'), t = ALLETOOLS.find(x => x.code === c), lijst = hlLijst(t).slice(), h = lijst[+i];
+    if (!h || !confirm(`Handleiding “${h.naam}” verwijderen? Dit kan niet ongedaan worden.`)) return;
+    try{ lijst.splice(+i, 1); await hlBewaar(t, lijst); await sb.storage.from('apps').remove([h.pad]); await laadMenu(); }catch(e){ $('nt-msg').innerHTML = `<div class="melding fout">${esc(e.message || e)}</div>`; } });
   $('tooltabel').querySelectorAll('[data-tactief]').forEach(b => b.onclick = async () => { const t = ALLETOOLS.find(x => x.code === b.dataset.tactief);
     if (!t.actief && !t.versie && !confirm('Er is nog geen versie geüpload. Toch aanzetten?')) return;
     const r = await sb.from('tools').update({actief: !t.actief}).eq('code', t.code); if (r.error) return $('nt-msg').innerHTML = `<div class="melding fout">${esc(r.error.message)}</div>`; await laadMenu(); });

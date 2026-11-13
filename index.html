@@ -45,7 +45,13 @@ button,input,select{font-family:var(--body);font-size:13px}
 .knop.klein{padding:5px 10px;font-size:12px;border-radius:7px}
 #tooltabel{table-layout:fixed;width:100%}
 #tooltabel td{vertical-align:middle}
-#tooltabel td:nth-child(2){word-break:break-all}
+#tooltabel td:nth-child(2){white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:12px;color:var(--ink-soft)}
+#tooltabel th{white-space:nowrap}
+#tooltabel td{padding-top:9px;padding-bottom:9px}
+#tooltabel td:nth-child(4) .knop{margin-top:4px}
+#tooltabel .tb-kies{flex:1 1 auto;min-width:0;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;text-align:center}
+#tooltabel .tb-kies.gekozen{border-color:var(--sage, #2A8C82);color:var(--ink)}
+#tooltabel td:last-child > div{gap:5px !important}
 #tooltabel .tb-oms{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.35;margin-top:2px}
 #tooltabel [data-tactief],#tooltabel [data-tteam]{white-space:nowrap}
 #tooltabel td:last-child > div{flex-wrap:nowrap !important}
@@ -67,7 +73,7 @@ body.tb-slepen,body.tb-slepen *{cursor:grabbing !important;user-select:none}
 .toeg-pop .tp-lijst .klein{opacity:.7}
 .toeg-pop .tp-noot{margin:6px 0 10px;line-height:1.35}
 .toeg-pop .tp-knop{display:flex;justify-content:flex-end;gap:6px}
-#tooltabel input[type=file]{max-width:190px !important;min-width:0;flex:1 1 auto}
+
 .knop:disabled{opacity:.5;cursor:default}
 #inlog .knop.prim{width:100%;margin-top:18px;padding:11px}
 .melding{font-size:12.5px;margin-top:12px;padding:8px 10px;border-radius:8px;background:var(--paper-dim);line-height:1.5}
@@ -115,9 +121,10 @@ body.sleept-blok{user-select:none;cursor:grabbing}
 .hlmenu button .d{margin-left:auto;color:var(--ink-soft);font-size:11px;white-space:nowrap}
 .hlmenu button .nw{font:800 9px var(--body);letter-spacing:.5px;text-transform:uppercase;color:#fff;background:#F26430;border-radius:99px;padding:1px 6px}
 .hlmenu .leeg{padding:8px;color:var(--ink-soft);font-size:12px}
-.tb-hl{display:flex;flex-direction:column;gap:3px;font-size:11.5px}
-.tb-hl .r{display:flex;gap:6px;align-items:center}
-.tb-hl .r a{cursor:pointer;color:var(--ink)} .tb-hl .r .x{cursor:pointer;color:var(--ink-soft);margin-left:auto} .tb-hl .r .x:hover{color:var(--bad)}
+.tb-hl{display:flex;flex-direction:column;gap:4px;font-size:12px;min-width:0}
+.tb-hl .r{display:flex;gap:6px;align-items:center;min-width:0}
+.tb-hl .r a{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tb-hl .r a{cursor:pointer;color:var(--ink)} .tb-hl .r .x{flex:none;cursor:pointer;color:var(--ink-soft);margin-left:auto} .tb-hl .r .x:hover{color:var(--bad)}
 .tegel .mthist{display:block;margin-top:6px}
 #onlineknop .stip{display:inline-block;width:7px;height:7px;border-radius:50%;background:#86D7A2;margin-right:6px;vertical-align:1px}
 #onlineknop.leeg .stip{background:rgba(255,255,255,.4)}
@@ -931,22 +938,23 @@ function sleepTool(e, greep){
 }
 function renderToolBeheer(){
   $('nt-codes').innerHTML = BINNENKORT.filter(([c]) => !ALLETOOLS.find(t => t.code === c)).map(([c, n]) => `<option value="${esc(c)}">${esc(n)}</option>`).join('');
-  $('tooltabel').innerHTML = '<colgroup><col style="width:17%"><col style="width:9%"><col style="width:5%"><col style="width:12%"><col style="width:6%"><col style="width:10%"><col style="width:10%"><col style="width:15%"><col></colgroup><tr><th>Tool</th><th>Code</th><th>Versie</th><th>Soort</th><th>Status</th><th>Wie kan erin</th><th>Wie kan aanpassen</th><th>Handleidingen</th><th>Nieuwe versie uploaden</th></tr>' + toolVolgorde().map((t, _i, L) => { const H = L.filter(x => !(x.instellingen && x.instellingen.onder)); const og = t.instellingen && t.instellingen.onder; return `<tr class="${og ? 'tb-sub' : ''}" data-tgroep="${esc(og || t.code)}"${og ? '' : ` data-thoofd="${esc(t.code)}"`}>
+  $('tooltabel').innerHTML = '<colgroup><col style="width:19%"><col style="width:8.5%"><col style="width:4.5%"><col style="width:12.5%"><col style="width:5.5%"><col style="width:10%"><col style="width:10.5%"><col style="width:12.5%"><col style="width:17%"></colgroup><tr><th>Tool</th><th>Code</th><th>Versie</th><th>Soort</th><th>Status</th><th>Wie kan erin</th><th>Wie kan aanpassen</th><th>Handleiding</th><th>Nieuwe versie</th></tr>' + toolVolgorde().map((t, _i, L) => { const H = L.filter(x => !(x.instellingen && x.instellingen.onder)); const og = t.instellingen && t.instellingen.onder; return `<tr class="${og ? 'tb-sub' : ''}" data-tgroep="${esc(og || t.code)}"${og ? '' : ` data-thoofd="${esc(t.code)}"`}>
     <td><div class="tb-naam">${t.instellingen && t.instellingen.onder ? '<span class="tb-hang" title="hangt altijd onder ' + esc((ALLETOOLS.find(x => x.code === t.instellingen.onder) || {}).naam || '') + '">↳</span>' : ''}<b${t.instellingen && t.instellingen.onder ? '' : ` class="tb-sleep" data-tsleep="${esc(t.code)}" title="ingedrukt houden en slepen om de volgorde te wijzigen"`}>${esc(t.naam)}</b></div><div class="klein tb-oms" title="${esc(t.omschrijving || '')}">${esc(t.omschrijving || '')}</div></td><td class="klein">${esc(t.code)}</td><td>${esc(t.versie || '–')}</td>
-    <td class="klein">${t.instellingen && t.instellingen.onder ? 'eerste tegel onder ' + esc((ALLETOOLS.find(x => x.code === t.instellingen.onder) || {}).naam || t.instellingen.onder) : t.instellingen && t.instellingen.klantloos ? 'zonder klant' : 'per klant<div style="margin-top:4px"><button class="knop klein" data-tteam="' + esc(t.code) + '" title="Mogen teamleden zelf nieuwe dataversies uploaden voor bestaande klanten?">' + (t.instellingen && t.instellingen.teamUpload ? '● team uploadt' : '○ alleen beheerder uploadt') + '</button></div>'}</td>
+    <td class="klein">${t.instellingen && t.instellingen.onder ? 'eerste tegel onder ' + esc((ALLETOOLS.find(x => x.code === t.instellingen.onder) || {}).naam || t.instellingen.onder) : t.instellingen && t.instellingen.klantloos ? 'zonder klant' : 'per klant<div style="margin-top:4px"><button class="knop klein" data-tteam="' + esc(t.code) + '" title="Mogen teamleden zelf nieuwe dataversies uploaden voor bestaande klanten?">' + (t.instellingen && t.instellingen.teamUpload ? '● team uploadt' : '○ beheerder uploadt') + '</button></div>'}</td>
     <td><button class="knop klein" data-tactief="${esc(t.code)}">${t.actief ? '● aan' : '○ uit'}</button></td>
     <td><button class="knop klein tb-toeg${t.instellingen && t.instellingen.slot ? ' dicht' : ''}" data-ttoeg="${esc(t.code)}" title="Kies wie deze tool kan openen. De tegel blijft voor iedereen zichtbaar.">${toegangLabel(t)}</button></td>
     <td><button class="knop klein tb-toeg${t.instellingen && t.instellingen.bewerkSlot ? ' dicht' : ''}" data-tbewerk="${esc(t.code)}" title="Kies wie in deze tool mag opslaan (beoordelingen, toelichtingen, statussen). Anderen kunnen alleen lezen.">${bewerkLabel(t)}</button></td>
-    <td><div class="tb-hl">${hlLijst(t).map((h, i) => `<span class="r"><a data-hlopen="${esc(t.code)}|${i}" title="klik = openen · dubbelklik = naam wijzigen">📄 ${esc(h.naam)}</a><span class="klein">${esc(new Date(h.datum).toLocaleDateString('nl-NL', {day: 'numeric', month: 'short'}))}</span><span class="x" data-hlweg="${esc(t.code)}|${i}" title="verwijderen">✕</span></span>`).join('')}
+    <td><div class="tb-hl">${hlLijst(t).map((h, i) => `<span class="r"><a data-hlopen="${esc(t.code)}|${i}" title="${esc(h.naam)} · ${esc(new Date(h.datum).toLocaleDateString('nl-NL', {day: 'numeric', month: 'short', year: 'numeric'}))} — klik = openen · dubbelklik = naam wijzigen">📄 ${esc(h.naam)}</a><span class="x" data-hlweg="${esc(t.code)}|${i}" title="verwijderen">✕</span></span>`).join('')}
       <label class="knop klein" style="align-self:flex-start;cursor:pointer" title="PDF uploaden. Zelfde naam als een bestaande handleiding = die wordt vervangen door de nieuwe versie.">＋ PDF<input type="file" accept="application/pdf,.pdf" data-hlnieuw="${esc(t.code)}" hidden></label></div></td>
-    <td>${(t.app_pad || '').split('/')[0] !== t.code && ALLETOOLS.find(x => x.code === (t.app_pad || '').split('/')[0]) ? `<div class="klein" style="margin-bottom:4px">gebruikt nu de app van <b>${esc(ALLETOOLS.find(x => x.code === t.app_pad.split('/')[0]).naam)}</b> — een eigen upload maakt hem los</div>` : ''}<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><input type="file" accept=".html,text/html" data-tbestand="${esc(t.code)}" style="max-width:210px;font-size:11px">
-      <input data-tversie="${esc(t.code)}" placeholder="versie" style="width:70px;padding:5px 7px;border:1px solid var(--hair2);border-radius:7px;background:var(--paper);color:var(--ink)">
+    <td>${(t.app_pad || '').split('/')[0] !== t.code && ALLETOOLS.find(x => x.code === (t.app_pad || '').split('/')[0]) ? `<div class="klein" style="margin-bottom:4px">gebruikt nu de app van <b>${esc(ALLETOOLS.find(x => x.code === t.app_pad.split('/')[0]).naam)}</b> — een eigen upload maakt hem los</div>` : ''}<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><label class="knop klein tb-kies" title="HTML-bestand van de nieuwe versie kiezen"><input type="file" accept=".html,text/html" data-tbestand="${esc(t.code)}" hidden><span>Kies bestand</span></label>
+      <input data-tversie="${esc(t.code)}" placeholder="versie" style="width:56px;flex:none;padding:5px 7px;border:1px solid var(--hair2);border-radius:7px;background:var(--paper);color:var(--ink)">
       <button class="knop klein prim" data-tupload="${esc(t.code)}">Uploaden</button></div></td></tr>`; }).join('');
   $('tooltabel').querySelectorAll('[data-tteam]').forEach(b => b.onclick = async () => { const t = ALLETOOLS.find(x => x.code === b.dataset.tteam);
     const inst = Object.assign({}, t.instellingen || {}, {teamUpload: !(t.instellingen && t.instellingen.teamUpload)});
     const r = await sb.from('tools').update({instellingen: inst}).eq('code', t.code); if (r.error) return $('nt-msg').innerHTML = `<div class="melding fout">${esc(r.error.message)}</div>`; await laadMenu(); });
   $('tooltabel').querySelectorAll('[data-ttoeg]').forEach(b => b.onclick = e => { e.stopPropagation(); toegangPopup(ALLETOOLS.find(x => x.code === b.dataset.ttoeg), b); });
   $('tooltabel').querySelectorAll('[data-tbewerk]').forEach(b => b.onclick = e => { e.stopPropagation(); toegangPopup(ALLETOOLS.find(x => x.code === b.dataset.tbewerk), b, 'bewerk'); });
+  $('tooltabel').querySelectorAll('[data-tbestand]').forEach(i => i.onchange = () => { const l = i.closest('label'), f = i.files[0]; l.querySelector('span').textContent = f ? f.name : 'Kies bestand'; l.title = f ? f.name : 'HTML-bestand van de nieuwe versie kiezen'; l.classList.toggle('gekozen', !!f); });
   $('tooltabel').querySelectorAll('[data-tsleep]').forEach(b => b.onpointerdown = e => sleepTool(e, b));
   /* handleidingen: uploaden (zelfde naam = vervangen), openen, verwijderen */
   const hlBewaar = async (t, lijst) => { const inst = Object.assign({}, t.instellingen || {}, {handleidingen: lijst}); const r = await sb.from('tools').update({instellingen: inst}).eq('code', t.code); if (r.error) throw r.error; };

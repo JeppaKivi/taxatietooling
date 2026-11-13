@@ -602,8 +602,7 @@ async function openHandleiding(pad, w){
   if (error || !data){ if (w) w.close(); return alert('Handleiding openen lukt niet: ' + (error ? error.message : 'onbekend')); }
   if (w) w.location = data.signedUrl; else location.href = data.signedUrl; }
 $('hlknop').addEventListener('click', e => { e.stopPropagation(); const m = $('hlmenu'), lijst = toolVolgorde().filter(t => hlLijst(t).length);
-  const nieuw = d => d && (Date.now() - new Date(d)) < 14 * 864e5;
-  m.innerHTML = lijst.length ? lijst.map(t => `<div class="kopje">${esc(t.naam)}</div>` + hlLijst(t).map((h, i) => `<button data-hl="${esc(t.code)}|${i}"><span>${esc(h.naam)}</span>${nieuw(h.datum) ? '<span class="nw">nieuw</span>' : ''}<span class="d">${esc(new Date(h.datum).toLocaleDateString('nl-NL', {day: 'numeric', month: 'short', year: 'numeric'}))}</span></button>`).join('')).join('')
+  m.innerHTML = lijst.length ? lijst.map(t => `<div class="kopje">${esc(t.naam)}</div>` + hlLijst(t).map((h, i) => `<button data-hl="${esc(t.code)}|${i}">📄 Handleiding</button>`).join('')).join('')
     : '<div class="leeg">Nog geen handleidingen.</div>';
   m.querySelectorAll('[data-hl]').forEach(b => b.onclick = () => { const [c, i] = b.dataset.hl.split('|'), t = ALLETOOLS.find(x => x.code === c), h = t && hlLijst(t)[+i]; if (!h) return;
     const w = window.open('', '_blank'); if (w) w.document.write('<p style="font:14px sans-serif;padding:20px">Handleiding wordt geopend…</p>'); m.classList.remove('open'); openHandleiding(h.pad, w); });

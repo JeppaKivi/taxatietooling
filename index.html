@@ -544,6 +544,7 @@ const mfGezien = k => { try{ const v = localStorage.getItem('tt_mfgezien_' + k);
 const mfZetGezien = (k, v) => { try{ localStorage.setItem('tt_mfgezien_' + k, String(v)); }catch(e){} };
 /* goed / aandacht van de nieuwste versie in het pakket, met de rekenkern en de formule van die klant (zelfde regels als de Controletool) */
 const PKC = {}, TELC = {};
+const hashTxt = t => { let h = 5381; for (let i = 0; i < t.length; i++) h = ((h << 5) + h + t.charCodeAt(i)) | 0; return (h >>> 0).toString(36); };
 async function ctPakket(d){ if (PKC[d.id]) return PKC[d.id];
   const b = await haal('data', d.bestand, false, d.op), st = /\.gz$/.test(d.bestand) ? new Blob([b]).stream().pipeThrough(new DecompressionStream('gzip')) : new Blob([b]).stream();
   const pk = JSON.parse(await new Response(st).text());
@@ -554,7 +555,7 @@ async function ctPakket(d){ if (PKC[d.id]) return PKC[d.id];
 }
 async function ctTel(d, v){
   const K = window.TTKERN; if (!K || !v || !v.cfg || !window.DecompressionStream) return null;
-  const tc = TICFG[d.klant_code] && TICFG[d.klant_code].toetsCfg, sl = d.id + '|' + v.versie + '|' + K.KERN_VERSIE + '|' + JSON.stringify(tc || null);
+  const tc = TICFG[d.klant_code] && TICFG[d.klant_code].toetsCfg, sl = d.id + '|' + v.versie + '|' + K.KERN_VERSIE + '|' + hashTxt(JSON.stringify(v.cfg) + JSON.stringify(tc || null));
   if (TELC[sl]) return TELC[sl];
   try{ const c = JSON.parse(localStorage.getItem('tt_tel_' + sl) || 'null'); if (c) return TELC[sl] = c; }catch(e){}
   try{

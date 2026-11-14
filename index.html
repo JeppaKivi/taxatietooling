@@ -926,11 +926,11 @@ function maakApi(tool, klant, ds, bytes){
       if (T === 'controle_marktwaarde' && K && K !== 'algemeen'){ await laadMf(); const v = mfVoor(K); if (v && v.cfg) return {versie: v.versie, cfg: v.cfg, naam: v.naam, op: v.op, kern: v.kern}; }
       const {data, error} = await sb.rpc('mf_vigerend'); if (error) fout(error); return data; },
     async mfKeuze(){ await laadMf(); const v = mfVoor(K);
-      return {gekozen: MFK[K] != null ? MFK[K] : null, toegepast: v ? v.versie : null, nieuwste: MFH[0] ? MFH[0].versie : null, magKiezen: !!(EFF().admin || api.lab.lid) && !ALS,
+      return {gekozen: MFK[K] != null ? MFK[K] : null, toegepast: v ? v.versie : null, nieuwste: MFH[0] ? MFH[0].versie : null, magKiezen: !!EFF().admin && !ALS,   /* besluit Jesper 14-11: alleen de beheerder kiest de formule per klant */
         lijst: MFH.map(x => ({versie: x.versie, naam: x.naam, notitie: x.notitie, op: x.op, door: x.door}))}; },
     async mfKies(v){
       if (T !== 'controle_marktwaarde' || !K || K === 'algemeen') fout({message: 'Alleen in de Controletool per klant'});
-      if (!(EFF().admin || api.lab.lid) || ALS) leesFout();
+      if (!EFF().admin || ALS) leesFout();
       const p = v == null || v === '' ? null : +v;
       let r = await sb.rpc('mf_klant_kies', {p_klant: K, p_versie: p});
       if (r.error && EFF().admin && /mf_klant_kies|function|schema cache/i.test(r.error.message || '')){   /* terugval zolang de databasefunctie er nog niet is: de beheerder schrijft zelf */

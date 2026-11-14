@@ -89,6 +89,9 @@ body.tb-slepen,body.tb-slepen *{cursor:grabbing !important;user-select:none}
 .klapkop{cursor:pointer;user-select:none}
 .klapcaret{font-size:12px;color:var(--ink-soft);margin-left:4px}
 .blok.dicht > .paneel, .blok.dicht #logklant, .blok.dicht > header .klein{display:none}
+.tegel .mfmeld{display:block;margin:2px 0 6px;padding:6px 9px;border-radius:8px;background:rgba(224,123,26,.12);border:1px solid rgba(224,123,26,.45);color:var(--ink);font-size:12px;line-height:1.45}
+.tegel .mfmeld b{font-weight:700}
+.tegel .kr{display:contents}
 .tegel .tel{display:flex;gap:12px;align-items:baseline;margin:6px 0 2px;font-size:12.5px;color:var(--ink-soft)}
 .tegel .tel b{font:800 20px var(--body);font-variant-numeric:tabular-nums;margin-right:4px}
 .tegel .tel .g b{color:var(--ok)} .tegel .tel .a b{color:var(--bad)} .tegel .tel .n b{color:var(--ink-soft);font-size:15px}
@@ -409,7 +412,7 @@ async function laadMenu(){
     sb.from('klanten').select('*').order('naam'),
     sb.from('datasets').select('id, klant_code, tool_code, snapshot, bestand, bytes, meta, door, op, status').eq('status', 'gepubliceerd').order('op', {ascending: false}),
     sb.from('mt_keuzes').select('klant_code, op, inst, voorstel, toelichting, status'),
-    sb.from('tool_keuzes').select('tool_code, klant_code, object_key, op, data, status')]);
+    sb.from('tool_keuzes').select('tool_code, klant_code, object_key, op, data, status'), laadMf()]);
   ALLETOOLS = a.data || []; TOOLS = ALLETOOLS.filter(t => t.actief || (EFF().admin && t.versie));   /* een uitgezette tool met versie ziet alleen de beheerder (om te testen) */ KLANTEN = (b.data || []).filter(k => !(k.meta && k.meta.verborgen)); KLANTEN_ALLE = b.data || []; DATASETS = c.data || [];
   KEUZETEL = {}; const tel = (tool, r, gevuld) => { const T = KEUZETEL[tool] || (KEUZETEL[tool] = {}), k = T[r.klant_code] || (T[r.klant_code] = {n: 0, op: null, tb: 0, ak: 0});
     if (r.status === 'ter_beoordeling') k.tb++; if (r.status === 'akkoord') k.ak++; if (!gevuld) return; k.n++; if (!k.op || r.op > k.op) k.op = r.op; };
@@ -525,10 +528,63 @@ function miniGrafiek(code){
   return svg('<rect x="40" y="14" width="120" height="42" rx="8" fill="none" stroke="#9AA3B2" stroke-dasharray="4 3"/>');
 }
 /* regel onder de klantnaam: bij een tool die tellingen meegeeft (controle marktwaarde) kort de nieuwste versie met goed / aandacht */
-function klantRegel(d){
+/* ---------- leidende formule per klant (Controletool wonen) en tegeltellingen zonder de tool te openen ----------
+   MFH = alle ooit doorgevoerde formules (nieuwste eerst); MFK[klant] = vastgezette versie (tool_instellingen.cfg.mfVersie), anders de nieuwste. */
+let MFH = [], MFK = {}, TICFG = {};
+async function laadMf(){
+  try{ const [h, ti] = await Promise.all([sb.rpc('mf_historie'), sb.from('tool_instellingen').select('klant_code, cfg').eq('tool_code', 'controle_marktwaarde')]);
+    MFH = (Array.isArray(h.data) ? h.data : []).slice().sort((a, b) => b.versie - a.versie); TICFG = {}; MFK = {};
+    for (const r of ti.data || []){ TICFG[r.klant_code] = r.cfg || {}; if (r.cfg && r.cfg.mfVersie != null && isFinite(+r.cfg.mfVersie)) MFK[r.klant_code] = +r.cfg.mfVersie; }
+  }catch(e){ console.warn('formules laden', e); }
+}
+const mfVoor = k => (MFK[k] != null && MFH.find(v => v.versie === MFK[k])) || MFH[0] || null;
+const mfKort = v => v ? 'v' + v.versie + (v.naam ? ' · ' + v.naam : '') : '';
+/* welke formule heeft deze gebruiker voor deze klant al gezien (bij het openen van de tool); eerste keer = de huidige, zonder melding */
+const mfGezien = k => { try{ const v = localStorage.getItem('tt_mfgezien_' + k); return v == null ? null : +v; }catch(e){ return null; } };
+const mfZetGezien = (k, v) => { try{ localStorage.setItem('tt_mfgezien_' + k, String(v)); }catch(e){} };
+/* goed / aandacht van de nieuwste versie in het pakket, met de rekenkern en de formule van die klant (zelfde regels als de Controletool) */
+const PKC = {}, TELC = {};
+async function ctPakket(d){ if (PKC[d.id]) return PKC[d.id];
+  const b = await haal('data', d.bestand, false, d.op), st = /\.gz$/.test(d.bestand) ? new Blob([b]).stream().pipeThrough(new DecompressionStream('gzip')) : new Blob([b]).stream();
+  const pk = JSON.parse(await new Response(st).text());
+  const vs = (Array.isArray(pk.versies) ? pk.versies : []).filter(v => v && Array.isArray(v.complexen)).sort((a, c) => String(a.op).localeCompare(String(c.op))), nw = vs[vs.length - 1];
+  const wws = new Map(); try{ const ib = pk.invBron && pk.invBron.ink; if (ib){ const ci = ib.kop.indexOf('complexnummer'), wi = ib.kop.indexOf('wws');
+    if (ci >= 0 && wi >= 0) for (const r of ib.rijen){ const id = String(r[ci] == null ? '' : r[ci]).trim(), w = typeof r[wi] === 'number' ? r[wi] : parseFloat(String(r[wi] == null ? '' : r[wi]).replace(',', '.')); if (id && isFinite(w)) wws.set(id, w); } } }catch(e){}
+  return PKC[d.id] = {rows: nw ? nw.complexen : (pk.complexen || []), versie: nw ? (nw.vn || nw.op) : ((pk.meta && (pk.meta.versie || pk.meta.datum)) || ''), wws};
+}
+async function ctTel(d, v){
+  const K = window.TTKERN; if (!K || !v || !v.cfg || !window.DecompressionStream) return null;
+  const tc = TICFG[d.klant_code] && TICFG[d.klant_code].toetsCfg, sl = d.id + '|' + v.versie + '|' + K.KERN_VERSIE + '|' + JSON.stringify(tc || null);
+  if (TELC[sl]) return TELC[sl];
+  try{ const c = JSON.parse(localStorage.getItem('tt_tel_' + sl) || 'null'); if (c) return TELC[sl] = c; }catch(e){}
+  try{
+    const P = await ctPakket(d), T = K.tcfgVan(tc), cfg = K.vulAan(v.cfg); let goed = 0, aand = 0, ntg = 0;
+    for (const c of P.rows){ const x = Object.assign({}, c); if (c.inp && typeof c.inp === 'object') x.inp = Object.assign({}, c.inp); if (c.rk) x.rk = Object.assign({}, c.rk); delete x._inp;
+      if (x.wws === undefined && P.wws.has(String(x.id))) x.wws = P.wws.get(String(x.id));
+      try{ K.herreken(x, cfg, T); }catch(e){}
+      if (!(x.mf > 1)){ ntg++; continue; } const a = K.isAandacht(x, T, false); if (a && a.aan) aand++; else goed++; }
+    const t = {goed, aand, ntg, n: P.rows.length, versie: P.versie, mf: v.versie};
+    TELC[sl] = t; try{ localStorage.setItem('tt_tel_' + sl, JSON.stringify(t)); }catch(e){} return t;
+  }catch(e){ console.warn('tegeltelling', d.klant_code, e); return null; }
+}
+/* klanttegels van de Controletool wonen live bijwerken; melding bij een nieuwe (of andere) formule tot deze gebruiker de klant opent */
+async function verversCtTegels(code){
+  if (code !== 'controle_marktwaarde' || !MFH.length) return;
+  for (const el of document.querySelectorAll('#klanten [data-kr]')){
+    const k = el.dataset.kr, d = DATASETS.find(x => x.tool_code === code && x.klant_code === k); if (!d) continue;
+    const va = mfVoor(k); if (!va) continue;
+    let gz = mfGezien(k); if (gz == null || !MFH.some(v => v.versie === gz)){ mfZetGezien(k, va.versie); gz = va.versie; }
+    const t = await ctTel(d, va); if (!t) continue;
+    const oud = gz !== va.versie ? await ctTel(d, MFH.find(v => v.versie === gz)) : null;
+    if (!document.body.contains(el)) return;
+    el.innerHTML = klantRegel(d, {tel: t, oud, va, gz: MFH.find(v => v.versie === gz), vast: MFK[k] != null});
+  }
+}
+function klantRegel(d, live){
   if (!d) return '<span class="o"><i>nog geen data gepubliceerd</i></span>';
-  const m = d.meta || {}, t = m.tel;
-  if (t && t.goed != null) return `<span class="o">${esc(t.versie || m.versie || '')}${t.n ? ' · ' + nl(t.n) + ' complexen' : ''}</span>
+  const m = d.meta || {}, t = live && live.tel || m.tel;
+  const meld = live && live.oud ? `<span class="mfmeld" title="${esc(live.va.notitie || '')}"><b>Let op: ${live.va.versie > live.gz.versie ? 'nieuwe' : 'andere'} modelmatige formule van toepassing</b> (${esc(mfKort(live.va))}${live.vast ? ', vastgezet voor deze klant' : ''})<br>goed ${nl(live.oud.goed)} → <b>${nl(t.goed)}</b> · aandacht ${nl(live.oud.aand)} → <b>${nl(t.aand)}</b>${live.oud.ntg !== t.ntg ? ` · niet getoetst ${nl(live.oud.ntg)} → ${nl(t.ntg)}` : ''}<span class="klein"> · verdwijnt als je de klant opent</span></span>` : '';
+  if (t && t.goed != null) return meld + `<span class="o">${esc(t.versie || m.versie || '')}${t.n ? ' · ' + nl(t.n) + ' complexen' : ''}${live && live.va && (live.vast || MFH.length > 1) ? ' · formule v' + live.va.versie : ''}</span>
     <span class="balk"><i style="width:${(t.goed / Math.max(1, t.goed + t.aand) * 100).toFixed(1)}%"></i><i style="width:${(t.aand / Math.max(1, t.goed + t.aand) * 100).toFixed(1)}%"></i></span>
     <span class="tel"><span class="g"><b>${nl(t.goed)}</b>goed</span><span class="a"><b>${nl(t.aand)}</b>aandacht</span>${t.ntg ? `<span class="n" title="geen modelmatige factor (bijv. studenteneenheden) — niet getoetst"><b>${nl(t.ntg)}</b>niet getoetst</span>` : ''}</span>`;
   /* BOG/MOG/ZOG: complexen en eenheden, en een balk met het oordeel (voorzet = nog geen eigen markthuur) */
@@ -566,7 +622,7 @@ function renderKlanten(code){
       <span class="v"><span>${lijst.length} klant${lijst.length === 1 ? '' : 'en'}</span>${t.versie ? `<span>versie ${esc(t.versie)}</span>` : ''}${t.actief ? '' : '<span class="badge">uit · alleen jij</span>'}${magIn(t) ? '' : '<span class="badge">🔒 niet beschikbaar</span>'}</span></button>`).join('')
     + lijst.map(k => { const d = laatste[k.code], kz = (KEUZETEL[code] || {})[k.code];
     return `<button class="tegel" data-klant="${esc(k.code)}"><span class="t">${esc(k.naam)}</span>
-      ${klantRegel(d)}
+      <span class="kr" data-kr="${esc(k.code)}">${klantRegel(d)}</span>
       <span class="v">${d ? `<span>gepubliceerd ${esc(tijd(d.op))}</span>` : ''}${kz && kz.n ? `<span>${kz.n} aanpassing${kz.n === 1 ? '' : 'en'} · laatst ${esc(tijd(kz.op))}</span>` : ''}</span>
       ${kz && (kz.tb || kz.ak) ? `<span class="v">${kz.tb ? `<span class="stpil tb">${kz.tb} ter beoordeling</span>` : ''}${kz.ak ? `<span class="stpil ak">${kz.ak} akkoord</span>` : ''}</span>` : ''}
       <span class="v online" id="online-${esc(k.code)}"></span>
@@ -574,6 +630,7 @@ function renderKlanten(code){
     + (ADM || magUploaden(tool) ? '<button class="tegel nieuw" id="nieuweklant">+ Nieuwe klant</button>' : '')
     + (!lijst.length && !ADM && !magUploaden(tool) ? '<p class="klein">Nog geen klanten met data voor deze tool.</p>' : '');
   $('klanten').querySelectorAll('[data-klant]').forEach(b => b.onclick = e => openTool(tool, b.dataset.klant, e.target.closest('[data-dataklant]') ? 'data' : null));
+  verversCtTegels(code);
   $('klanten').querySelectorAll('[data-sub]').forEach(b => b.onclick = () => { const t = TOOLS.find(x => x.code === b.dataset.sub); if (t && !magIn(t)) return alert('Niet voor deze gebruiker beschikbaar.'); if (t) openTool(t, 'algemeen'); });
   /* nieuwe klant: de tegel zelf wordt het invoerveld (geen pop-up); bestaande klant (bv. van een andere tool) wordt hergebruikt */
   if ($('nieuweklant')) $('nieuweklant').onclick = () => {
@@ -750,6 +807,7 @@ function voorlaad(tool, klant){
   return Promise.race([lees, new Promise(res => setTimeout(() => res(null), 4000))]);
 }
 async function openTool(tool, klantCode, startView = null){
+  if (tool && tool.code === 'controle_marktwaarde' && klantCode){ const va = mfVoor(klantCode); if (va && !ALS) mfZetGezien(klantCode, va.versie); }
   const klant = KLANTEN_ALLE.find(k => k.code === klantCode); if (!klant){ toon('menu'); return; }
   if (!magIn(tool)){ alert('Niet voor deze gebruiker beschikbaar.'); history.replaceState(null, '', location.pathname); toon('menu'); return; }
   toon('laden'); $('ladentekst').textContent = `${tool.naam} · ${klant.naam} wordt geladen…`; stopOnline(); onlineWaar(tool, klantCode);
@@ -816,7 +874,10 @@ function maakApi(tool, klant, ds, bytes){
     async verwijder(key){ if (!ik.bewerken) leesFout(); const {error} = await sb.from('tool_keuzes').delete().eq('tool_code', T).eq('klant_code', K).eq('object_key', String(key)); if (error) fout(error); },
     /* instellingen per klant (iedereen leest, alleen beheerder schrijft) */
     async instellingen(){ const {data, error} = await sb.from('tool_instellingen').select('cfg').eq('tool_code', T).eq('klant_code', K).maybeSingle(); if (error) fout(error); return data ? data.cfg : null; },
-    async bewaarInstellingen(cfg){ const {error} = await sb.from('tool_instellingen').upsert({tool_code: T, klant_code: K, cfg}, {onConflict: 'tool_code,klant_code'}); if (error) fout(error); },
+    async bewaarInstellingen(cfg){
+      /* de formulekeuze per klant (mfVersie) staat in dezelfde rij en mag niet wegvallen als de tool zijn eigen instellingen bewaart */
+      if (T === 'controle_marktwaarde' && cfg && typeof cfg === 'object' && !('mfVersie' in cfg) && MFK[K] != null) cfg = Object.assign({}, cfg, {mfVersie: MFK[K]});
+      const {error} = await sb.from('tool_instellingen').upsert({tool_code: T, klant_code: K, cfg}, {onConflict: 'tool_code,klant_code'}); if (error) fout(error); },
     /* live: wijzigingen van collega's, instellingen, aanwezigheid */
     onWijziging(cb){ wijzCb = cb; }, onInstellingen(cb){ instCb = cb; }, onAanwezig(cb){ aanwCb = cb; },
     aanwezig(){ if (!kan) return []; const per = {}; for (const l of Object.values(kan.presenceState())) for (const p of l) if (p.email !== IK.email && !p.hub) per[p.email] = p; return Object.values(per); },
@@ -859,7 +920,23 @@ function maakApi(tool, klant, ds, bytes){
       const {data, error} = await sb.from('tool_keuzes').select('klant_code, object_key, data, status').eq('tool_code', B); if (error) fout(error); return data || []; },
     /* gedeelde rekenkern + de leidende formuleset uit het Parameterlab */
     kern: window.TTKERN || null,
-    async mfVigerend(){ const {data, error} = await sb.rpc('mf_vigerend'); if (error) fout(error); return data; },
+    async mfVigerend(){
+      /* Controletool wonen: de formule die voor deze klant geldt (vastgezet in Config, anders de nieuwste) */
+      if (T === 'controle_marktwaarde' && K && K !== 'algemeen'){ await laadMf(); const v = mfVoor(K); if (v && v.cfg) return {versie: v.versie, cfg: v.cfg, naam: v.naam, op: v.op, kern: v.kern}; }
+      const {data, error} = await sb.rpc('mf_vigerend'); if (error) fout(error); return data; },
+    async mfKeuze(){ await laadMf(); const v = mfVoor(K);
+      return {gekozen: MFK[K] != null ? MFK[K] : null, toegepast: v ? v.versie : null, nieuwste: MFH[0] ? MFH[0].versie : null, magKiezen: !!(EFF().admin || api.lab.lid) && !ALS,
+        lijst: MFH.map(x => ({versie: x.versie, naam: x.naam, notitie: x.notitie, op: x.op, door: x.door}))}; },
+    async mfKies(v){
+      if (T !== 'controle_marktwaarde' || !K || K === 'algemeen') fout({message: 'Alleen in de Controletool per klant'});
+      if (!(EFF().admin || api.lab.lid) || ALS) leesFout();
+      const p = v == null || v === '' ? null : +v;
+      let r = await sb.rpc('mf_klant_kies', {p_klant: K, p_versie: p});
+      if (r.error && EFF().admin && /mf_klant_kies|function|schema cache/i.test(r.error.message || '')){   /* terugval zolang de databasefunctie er nog niet is: de beheerder schrijft zelf */
+        const cur = await sb.from('tool_instellingen').select('cfg').eq('tool_code', T).eq('klant_code', K).maybeSingle(); const cfg = Object.assign({}, (cur.data && cur.data.cfg) || {});
+        if (p == null) delete cfg.mfVersie; else cfg.mfVersie = p;
+        r = await sb.from('tool_instellingen').upsert({tool_code: T, klant_code: K, cfg}, {onConflict: 'tool_code,klant_code'}); }
+      if (r.error) fout(r.error); await laadMf(); const x = mfVoor(K); if (x) mfZetGezien(K, x.versie); return x ? x.versie : null; },
     async mfHistorie(){ const {data, error} = await sb.rpc('mf_historie'); if (error) fout(error); return data || []; },
     /* Parameterlab: alleen de toegangslijst (tools.parameterlab.instellingen.toegang) of de beheerder; Supabase controleert het ook */
     lab: {

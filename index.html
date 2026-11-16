@@ -580,6 +580,7 @@ async function verversCtTegels(code){
     if (!document.body.contains(el)) return;
     el.innerHTML = klantRegel(d, {tel: t, oud, va, gz: MFH.find(v => v.versie === gz), vast: MFK[k] != null});
   }
+  lijnUit();
 }
 function klantRegel(d, live){
   if (!d) return '<span class="o"><i>nog geen data gepubliceerd</i></span>';
@@ -658,7 +659,24 @@ function renderKlanten(code){
   };
   $('klantblok').scrollIntoView({behavior: 'smooth', block: 'nearest'}); pasIndelingToe();
   volgOnline(code, lijst.map(k => k.code));
+  lijnUit();
 }
+/* klanttegels van één tool gelijk uitlijnen: elk onderdeel (kopregel, balk, tellingen, grafiek, …) krijgt de hoogte van het hoogste
+   exemplaar in de andere tegels, zodat balken en grafieken op dezelfde lijn liggen, ook als een tekst bij één klant over twee regels loopt */
+function lijnUit(){
+  const box = $('klanten'); if (!box) return;
+  const tg = [...box.querySelectorAll(':scope > .tegel[data-klant]')];
+  const delen = t => [...t.children].flatMap(c => c.classList.contains('kr') ? [...c.children] : [c]).filter(e => !e.classList.contains('v') && !e.classList.contains('tegelactie'));
+  const per = tg.map(t => { const tel = {}; return delen(t).map(e => { e.style.minHeight = ''; const k = e.tagName + '.' + [...e.classList].sort().join('.'); tel[k] = (tel[k] || 0) + 1; return [k + '#' + tel[k], e]; }); });
+  if (tg.length < 2) return;
+  const max = {}; for (const l of per) for (const [k, e] of l) max[k] = Math.max(max[k] || 0, e.getBoundingClientRect().height);
+  for (const l of per) for (const [k, e] of l) if (max[k] > e.getBoundingClientRect().height + .5) e.style.minHeight = max[k] + 'px';
+}
+{ let t = 0; const plan = () => { clearTimeout(t); t = setTimeout(lijnUit, 80); };
+  window.addEventListener('resize', plan); if (document.fonts) document.fonts.ready.then(plan);
+  /* alleen op breedte reageren (de eigen min-heights veranderen de hoogte en mogen geen lus geven) */
+  const kijk = () => { const b = document.getElementById('klanten'); if (!b || !window.ResizeObserver) return; let w = 0; new ResizeObserver(e => { const nw = Math.round(e[0].contentRect.width); if (nw !== w){ w = nw; plan(); } }).observe(b); };
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', kijk); else kijk(); }
 
 /* ---------- handleidingen: per tool in tools.instellingen.handleidingen [{naam, pad, datum, bytes}], pdf in bucket apps ---------- */
 /* menulabel: één handleiding = "Handleiding"; meer = "Handleiding <naam zonder toolnaam>", bv. Handleiding kort / Handleiding uitgebreid */

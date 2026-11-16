@@ -788,7 +788,14 @@ function cache(actie, sleutel, waarde){
 }
 async function haal(bucket, pad, tekst, stempel = ''){
   const sl = bucket + '/' + pad + '@' + stempel, c = await cache('get', sl); if (c) return c;
-  const {data, error} = await sb.storage.from(bucket).download(pad);
+  /* toolcode altijd vers ophalen: de opslag geeft max-age=3600 mee, waardoor de browser na een upload tot een uur de vorige versie teruggaf.
+     Een eenmalige ondertekende URL + cache 'no-store' omzeilt de browser- en CDN-cache; de eigen cache hierboven (pad + tijdstempel) blijft. */
+  let data, error;
+  if (bucket === 'apps'){
+    const s = await sb.storage.from(bucket).createSignedUrl(pad, 120);
+    if (s.error) error = s.error;
+    else { try{ const r = await fetch(s.data.signedUrl, {cache: 'no-store'}); if (!r.ok) throw new Error('HTTP ' + r.status); data = await r.blob(); }catch(e){ error = e; } }
+  } else ({data, error} = await sb.storage.from(bucket).download(pad));
   if (error) throw new Error('ophalen ' + pad + ': ' + error.message);
   const w = tekst ? await data.text() : new Uint8Array(await data.arrayBuffer());
   cache('put', sl, w); return w;

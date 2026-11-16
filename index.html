@@ -787,7 +787,8 @@ function cache(actie, sleutel, waarde){
       const r = actie === 'get' ? st.get(sleutel) : st.put(waarde, sleutel); r.onsuccess = () => res(r.result); r.onerror = () => res(null); }; }catch(e){ res(null); } });
 }
 async function haal(bucket, pad, tekst, stempel = ''){
-  const sl = bucket + '/' + pad + '@' + stempel, c = await cache('get', sl); if (c) return c;
+  /* '#2' bij apps: oude cache-items konden een verouderde versie onder een nieuwe tijdstempel bevatten (browsercache, vóór 16-11) */
+  const sl = bucket + '/' + pad + '@' + stempel + (bucket === 'apps' ? '#2' : ''), c = await cache('get', sl); if (c) return c;
   /* toolcode altijd vers ophalen: de opslag geeft max-age=3600 mee, waardoor de browser na een upload tot een uur de vorige versie teruggaf.
      Een eenmalige ondertekende URL + cache 'no-store' omzeilt de browser- en CDN-cache; de eigen cache hierboven (pad + tijdstempel) blijft. */
   let data, error;

@@ -195,6 +195,35 @@ h2{font:800 11px var(--body);text-transform:uppercase;letter-spacing:1.4px;color
 .tegel .v .nu{color:var(--ok);font-weight:700}
 .badge{font:800 9.5px var(--body);text-transform:uppercase;letter-spacing:.7px;padding:2px 7px;border-radius:99px;background:var(--paper-dim);color:var(--ink-soft);align-self:flex-start}
 /* ---------- beheer ---------- */
+/* beheer mag breder dan de tegels erboven: gecentreerd op het scherm, tot 2200px */
+#beheerblok{width:min(2200px, calc(100vw - 56px));position:relative;left:50%;transform:translateX(-50%)}
+@media (max-width:860px){ #beheerblok{width:auto;left:0;transform:none} }
+/* toegangsmatrix: per tool × teamlid wie kan openen en aanpassen */
+.tm-kop{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin:0 0 8px}
+.tm-kop b{font-size:13.5px}
+.tm-leg{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--ink-soft);align-items:center}
+.tm-leg span{display:inline-flex;align-items:center;gap:6px}
+#toegmatrix{table-layout:fixed;min-width:760px}
+#toegmatrix th,#toegmatrix td{text-align:center}
+#toegmatrix th:first-child,#toegmatrix td:first-child{text-align:left}
+#toegmatrix th.tm-p{text-transform:none;letter-spacing:0;font:700 12px var(--body);color:var(--ink);line-height:1.2}
+#toegmatrix th.tm-p .klein{display:block;font-weight:500;font-size:10.5px;color:var(--ink-soft)}
+#toegmatrix td{padding:5px 5px}
+#toegmatrix tr.tm-sub td:first-child{padding-left:26px}
+#toegmatrix tr.tm-sub td{background:rgba(21,68,115,.03)}
+#toegmatrix tr.tm-af td:first-child{opacity:.55}
+#toegmatrix .tm-tool b{display:block}
+#toegmatrix .tm-tool .klein{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+.tm-cel{width:100%;min-height:30px;border-radius:8px;border:1px solid transparent;font:700 12px var(--body);display:inline-flex;align-items:center;justify-content:center;gap:5px;cursor:pointer;padding:4px 6px;position:relative}
+.tm-cel.bew{background:rgba(30,145,80,.13);color:#17703D;border-color:rgba(30,145,80,.28)}
+.tm-cel.lees{background:rgba(46,92,138,.10);color:#2E5C8A;border-color:rgba(46,92,138,.25)}
+.tm-cel.geen{background:repeating-linear-gradient(135deg,transparent 0 5px,rgba(120,130,145,.10) 5px 7px);color:var(--ink-soft);border-color:var(--hairline);font-weight:500}
+.tm-cel:hover{outline:2px solid var(--acc);outline-offset:1px}
+.tm-cel .up{font-size:10.5px;font-weight:800;opacity:.85;margin-left:2px}
+.tm-cel.vast{cursor:default}.tm-cel.vast:hover{outline:none}
+[data-theme=dark] .tm-cel.bew{color:#7FD3A0}[data-theme=dark] .tm-cel.lees{color:#9EC2EA}
+.tm-mode{font-size:11px;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis}
+.tm-noot{margin:8px 0 18px}
 .paneel{background:var(--card);border:1px solid var(--hairline);border-radius:14px;padding:16px}
 .paneel .tabelwrap{overflow-x:auto}
 .logpager{display:flex;align-items:center;gap:6px;justify-content:center;margin-top:10px;flex-wrap:wrap}
@@ -323,7 +352,12 @@ th{font:800 9.5px var(--body);text-transform:uppercase;letter-spacing:.8px;color
         <div style="margin-top:16px"><b>Back-up</b>
           <p class="klein" style="margin:4px 0 8px">Alle beoordelingen, opmerkingen, instellingen, weergaven, team en logboek als één bestand (gratis Supabase maakt zelf geen back-ups).</p>
           <button class="knop klein" id="backup">⤓ Download back-up</button><span id="b-msg" class="klein" style="margin-left:8px"></span></div></div>
-        <div class="pane verborgen" data-pane="toolsbeheer"><div class="tabelwrap"><table id="tooltabel"></table></div>
+        <div class="pane verborgen" data-pane="toolsbeheer">
+        <div class="tm-kop"><b>Wie kan wat</b><span class="tm-leg"><span><i class="tm-cel bew" style="width:auto;min-height:0;cursor:default">✎ aanpassen</i>openen en opslaan</span><span><i class="tm-cel lees" style="width:auto;min-height:0;cursor:default">👁 lezen</i>openen, niets opslaan</span><span><i class="tm-cel geen" style="width:auto;min-height:0;cursor:default">— geen</i>tegel zichtbaar, niet te openen</span><span><b>⇪</b> mag ook data inlezen en publiceren</span></span></div>
+        <div class="tabelwrap"><table id="toegmatrix"></table></div><div id="tm-msg"></div>
+        <p class="klein tm-noot">Klik op een vakje om te wisselen: geen → lezen → aanpassen. De kolommen <b>Openen</b> en <b>Aanpassen</b> laten zien of een tool voor iedereen open staat (ook voor nieuwe teamleden) of alleen voor een selectie; klik erop voor de volledige keuze. De beheerder kan altijd aanpassen, maar alleen openen als hij bij een selectie is aangevinkt.</p>
+        <div class="tm-kop"><b>Versies, handleidingen en volgorde</b></div>
+        <div class="tabelwrap"><table id="tooltabel"></table></div>
         <div class="rij"><input id="nt-code" placeholder="code (bv. bollengrafiek)" list="nt-codes"><datalist id="nt-codes"></datalist><input id="nt-naam" placeholder="naam op de tegel"><input id="nt-oms" placeholder="korte omschrijving" style="flex:2 1 200px">
           <label class="klein" style="display:flex;gap:5px;align-items:center"><input type="checkbox" id="nt-kl"> zonder klant</label><button class="knop klein prim" id="nt-toe">Tool aanmaken</button></div>
         <p class="klein" style="margin:8px 0 0">Een nieuwe tool staat eerst <b>uit</b>: alleen jij ziet hem in deze lijst. Upload een versie (HTML-bestand uit de tool-chat) en zet hem daarna aan. "Zonder klant" = de tool opent direct, zonder klantkeuze.</p>
@@ -1047,14 +1081,56 @@ function sleepTool(e, greep){
   };
   addEventListener('pointermove', beweeg, {passive: false}); addEventListener('pointerup', los); addEventListener('pointercancel', los);
 }
+/* ---------- toegangsmatrix: tools × teamleden ---------- */
+const lc = e => String(e || '').toLowerCase();
+const tmIsAdm = e => (TEAM.find(x => lc(x.email) === lc(e)) || {}).rol === 'admin';
+function tmStand(t, e){
+  const i = t.instellingen || {}, ee = lc(e);
+  const open = !i.slot || (i.toegang || []).map(lc).includes(ee); if (!open) return 'geen';
+  return tmIsAdm(ee) || !i.bewerkSlot || (i.bewerkers || []).map(lc).includes(ee) ? 'bew' : 'lees';
+}
+const tmUpload = (t, e) => { const i = t.instellingen || {}; if (i.klantloos || i.onder) return false; return tmIsAdm(e) || !!i.teamUpload || (!!i.bewerkSlot && (i.bewerkers || []).map(lc).includes(lc(e))); };
+function renderToegMatrix(){
+  const leden = TEAM.filter(m => m.actief).sort((a, b) => (b.rol === 'admin') - (a.rol === 'admin') || String(a.naam || a.email).localeCompare(String(b.naam || b.email)));
+  const pw = Math.max(92, Math.min(150, Math.floor(1100 / Math.max(1, leden.length))));
+  const cel = (t, m) => { const st = tmStand(t, m.email), up = st !== 'geen' && tmUpload(t, m.email), adm = m.rol === 'admin';
+    const txt = st === 'bew' ? '✎ aanpassen' : st === 'lees' ? '👁 lezen' : '— geen';
+    const tip = `${m.naam || m.email} · ${t.naam}: ${st === 'bew' ? 'kan openen en opslaan' : st === 'lees' ? 'kan openen en lezen, niets opslaan' : 'kan niet openen'}${up ? '; mag data inlezen en publiceren' : ''}. Klik: ${st === 'geen' ? (adm ? 'aanpassen' : 'lezen') : st === 'lees' ? 'aanpassen' : 'geen toegang'}.`;
+    return `<td><button class="tm-cel ${st}" data-tmc="${esc(t.code)}|${esc(lc(m.email))}" title="${esc(tip)}">${txt}${up ? '<span class="up">⇪</span>' : ''}</button></td>`; };
+  const mode = (t, ed) => { const i = t.instellingen || {}, sl = ed ? i.bewerkSlot : i.slot;
+    return `<button class="knop klein tm-mode${sl ? ' tb-toeg dicht' : ''}" data-tm${ed ? 'b' : 'o'}="${esc(t.code)}" title="${ed ? 'Wie mag opslaan' : 'Wie kan openen'}: klik voor de volledige keuze">${sl ? '◐ selectie' : '● iedereen'}</button>`; };
+  $('toegmatrix').innerHTML = `<colgroup><col style="width:230px"><col style="width:96px"><col style="width:96px">${leden.map(() => `<col style="width:${pw}px">`).join('')}</colgroup>
+    <tr><th>Tool</th><th>Openen</th><th>Aanpassen</th>${leden.map(m => `<th class="tm-p">${esc(m.naam || m.email)}<span class="klein">${m.rol === 'admin' ? 'beheerder' : esc(String(m.email).split('@')[1] || '')}</span></th>`).join('')}</tr>`
+    + toolVolgorde().map(t => { const og = t.instellingen && t.instellingen.onder;
+      return `<tr class="${og ? 'tm-sub' : ''}${t.actief ? '' : ' tm-af'}"><td class="tm-tool"><b>${og ? '↳ ' : ''}${esc(t.naam)}</b><span class="klein">${t.actief ? '' : 'uit · '}${t.instellingen && t.instellingen.klantloos ? 'zonder klant' : og ? 'onder ' + esc((ALLETOOLS.find(x => x.code === og) || {}).naam || og) : 'per klant' + (t.instellingen && t.instellingen.teamUpload ? ' · team uploadt' : '')}</span></td>
+        <td>${mode(t, false)}</td><td>${mode(t, true)}</td>${leden.map(m => cel(t, m)).join('')}</tr>`; }).join('');
+  $('toegmatrix').querySelectorAll('[data-tmo]').forEach(b => b.onclick = e => { e.stopPropagation(); toegangPopup(ALLETOOLS.find(x => x.code === b.dataset.tmo), b); });
+  $('toegmatrix').querySelectorAll('[data-tmb]').forEach(b => b.onclick = e => { e.stopPropagation(); toegangPopup(ALLETOOLS.find(x => x.code === b.dataset.tmb), b, 'bewerk'); });
+  $('toegmatrix').querySelectorAll('[data-tmc]').forEach(b => b.onclick = async () => {
+    const [code, e] = b.dataset.tmc.split('|'), t = ALLETOOLS.find(x => x.code === code); if (!t) return;
+    const inst = JSON.parse(JSON.stringify(t.instellingen || {})), st = tmStand(t, e), adm = tmIsAdm(e);
+    const alle = TEAM.filter(m => m.actief).map(m => lc(m.email)), zonder = (l, x) => l.map(lc).filter(y => y !== x);
+    const zetOpen = aan => { if (aan){ if (inst.slot && !(inst.toegang || []).map(lc).includes(e)) inst.toegang = (inst.toegang || []).concat([e]); }
+      else { inst.toegang = zonder(inst.slot ? (inst.toegang || []) : alle, e); inst.slot = true; } };
+    const zetBew = aan => { if (aan){ if (inst.bewerkSlot && !(inst.bewerkers || []).map(lc).includes(e)) inst.bewerkers = (inst.bewerkers || []).concat([e]); }
+      else { inst.bewerkers = zonder(inst.bewerkSlot ? (inst.bewerkers || []) : alle.filter(x => !tmIsAdm(x)), e); inst.bewerkSlot = true; } };
+    let nieuw;
+    if (st === 'geen'){ zetOpen(true); if (!adm) zetBew(false); nieuw = adm ? 'bew' : 'lees'; }
+    else if (st === 'lees'){ zetBew(true); nieuw = 'bew'; }
+    else { if (adm && e === lc(IK.email) && !confirm('Je zet jezelf uit: daarna kun jij ' + t.naam + ' ook niet openen. Doorgaan?')) return;
+      zetOpen(false); if (inst.bewerkSlot) inst.bewerkers = zonder(inst.bewerkers || [], e); nieuw = 'geen'; }
+    b.disabled = true;
+    const r = await sb.from('tools').update({instellingen: inst}).eq('code', t.code);
+    if (r.error){ b.disabled = false; return $('tm-msg').innerHTML = `<div class="melding fout">${esc(r.error.message)}</div>`; }
+    $('tm-msg').innerHTML = `<div class="melding ok">${esc(naamKort(e))} · ${esc(t.naam)}: ${nieuw === 'bew' ? 'kan openen en aanpassen' : nieuw === 'lees' ? 'kan openen en lezen' : 'geen toegang'}.</div>`;
+    await laadMenu(); });
+}
 function renderToolBeheer(){
   $('nt-codes').innerHTML = BINNENKORT.filter(([c]) => !ALLETOOLS.find(t => t.code === c)).map(([c, n]) => `<option value="${esc(c)}">${esc(n)}</option>`).join('');
-  $('tooltabel').innerHTML = '<colgroup><col style="width:19%"><col style="width:8.5%"><col style="width:4.5%"><col style="width:12.5%"><col style="width:5.5%"><col style="width:10%"><col style="width:10.5%"><col style="width:12.5%"><col style="width:17%"></colgroup><tr><th>Tool</th><th>Code</th><th>Versie</th><th>Soort</th><th>Status</th><th>Wie kan erin</th><th>Wie kan aanpassen</th><th>Handleiding</th><th>Nieuwe versie</th></tr>' + toolVolgorde().map((t, _i, L) => { const H = L.filter(x => !(x.instellingen && x.instellingen.onder)); const og = t.instellingen && t.instellingen.onder; return `<tr class="${og ? 'tb-sub' : ''}" data-tgroep="${esc(og || t.code)}"${og ? '' : ` data-thoofd="${esc(t.code)}"`}>
+  $('tooltabel').innerHTML = '<colgroup><col style="width:23%"><col style="width:9%"><col style="width:5%"><col style="width:14%"><col style="width:7%"><col style="width:19%"><col style="width:23%"></colgroup><tr><th>Tool</th><th>Code</th><th>Versie</th><th>Soort</th><th>Status</th><th>Handleiding</th><th>Nieuwe versie</th></tr>' + toolVolgorde().map((t, _i, L) => { const H = L.filter(x => !(x.instellingen && x.instellingen.onder)); const og = t.instellingen && t.instellingen.onder; return `<tr class="${og ? 'tb-sub' : ''}" data-tgroep="${esc(og || t.code)}"${og ? '' : ` data-thoofd="${esc(t.code)}"`}>
     <td><div class="tb-naam">${t.instellingen && t.instellingen.onder ? '<span class="tb-hang" title="hangt altijd onder ' + esc((ALLETOOLS.find(x => x.code === t.instellingen.onder) || {}).naam || '') + '">↳</span>' : ''}<b${t.instellingen && t.instellingen.onder ? '' : ` class="tb-sleep" data-tsleep="${esc(t.code)}" title="ingedrukt houden en slepen om de volgorde te wijzigen"`}>${esc(t.naam)}</b></div><div class="klein tb-oms" title="${esc(t.omschrijving || '')}">${esc(t.omschrijving || '')}</div></td><td class="klein">${esc(t.code)}</td><td>${esc(t.versie || '–')}</td>
     <td class="klein">${t.instellingen && t.instellingen.onder ? 'eerste tegel onder ' + esc((ALLETOOLS.find(x => x.code === t.instellingen.onder) || {}).naam || t.instellingen.onder) : t.instellingen && t.instellingen.klantloos ? 'zonder klant' : 'per klant<div style="margin-top:4px"><button class="knop klein" data-tteam="' + esc(t.code) + '" title="Mogen teamleden zelf nieuwe dataversies uploaden voor bestaande klanten?">' + (t.instellingen && t.instellingen.teamUpload ? '● team uploadt' : '○ beheerder uploadt') + '</button></div>'}</td>
     <td><button class="knop klein" data-tactief="${esc(t.code)}">${t.actief ? '● aan' : '○ uit'}</button></td>
-    <td><button class="knop klein tb-toeg${t.instellingen && t.instellingen.slot ? ' dicht' : ''}" data-ttoeg="${esc(t.code)}" title="Kies wie deze tool kan openen. De tegel blijft voor iedereen zichtbaar.">${toegangLabel(t)}</button></td>
-    <td><button class="knop klein tb-toeg${t.instellingen && t.instellingen.bewerkSlot ? ' dicht' : ''}" data-tbewerk="${esc(t.code)}" title="Kies wie in deze tool mag opslaan (beoordelingen, toelichtingen, statussen). Anderen kunnen alleen lezen.">${bewerkLabel(t)}</button></td>
     <td><div class="tb-hl">${hlLijst(t).map((h, i) => `<span class="r"><a data-hlopen="${esc(t.code)}|${i}" title="${esc(h.naam)} · ${esc(new Date(h.datum).toLocaleDateString('nl-NL', {day: 'numeric', month: 'short', year: 'numeric'}))} — klik = openen · dubbelklik = naam wijzigen">📄 ${esc(h.naam)}</a><span class="x" data-hlweg="${esc(t.code)}|${i}" title="verwijderen">✕</span></span>`).join('')}
       <label class="knop klein" style="align-self:flex-start;cursor:pointer" title="PDF uploaden. Zelfde naam als een bestaande handleiding = die wordt vervangen door de nieuwe versie.">＋ PDF<input type="file" accept="application/pdf,.pdf" data-hlnieuw="${esc(t.code)}" hidden></label></div></td>
     <td>${(t.app_pad || '').split('/')[0] !== t.code && ALLETOOLS.find(x => x.code === (t.app_pad || '').split('/')[0]) ? `<div class="klein" style="margin-bottom:4px">gebruikt nu de app van <b>${esc(ALLETOOLS.find(x => x.code === t.app_pad.split('/')[0]).naam)}</b> — een eigen upload maakt hem los</div>` : ''}<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><label class="knop klein tb-kies" title="HTML-bestand van de nieuwe versie kiezen"><input type="file" accept=".html,text/html" data-tbestand="${esc(t.code)}" hidden><span>Kies bestand</span></label>
@@ -1063,8 +1139,7 @@ function renderToolBeheer(){
   $('tooltabel').querySelectorAll('[data-tteam]').forEach(b => b.onclick = async () => { const t = ALLETOOLS.find(x => x.code === b.dataset.tteam);
     const inst = Object.assign({}, t.instellingen || {}, {teamUpload: !(t.instellingen && t.instellingen.teamUpload)});
     const r = await sb.from('tools').update({instellingen: inst}).eq('code', t.code); if (r.error) return $('nt-msg').innerHTML = `<div class="melding fout">${esc(r.error.message)}</div>`; await laadMenu(); });
-  $('tooltabel').querySelectorAll('[data-ttoeg]').forEach(b => b.onclick = e => { e.stopPropagation(); toegangPopup(ALLETOOLS.find(x => x.code === b.dataset.ttoeg), b); });
-  $('tooltabel').querySelectorAll('[data-tbewerk]').forEach(b => b.onclick = e => { e.stopPropagation(); toegangPopup(ALLETOOLS.find(x => x.code === b.dataset.tbewerk), b, 'bewerk'); });
+  renderToegMatrix();
   $('tooltabel').querySelectorAll('[data-tbestand]').forEach(i => i.onchange = () => { const l = i.closest('label'), f = i.files[0]; l.querySelector('span').textContent = f ? f.name : 'Kies bestand'; l.title = f ? f.name : 'HTML-bestand van de nieuwe versie kiezen'; l.classList.toggle('gekozen', !!f); });
   $('tooltabel').querySelectorAll('[data-tsleep]').forEach(b => b.onpointerdown = e => sleepTool(e, b));
   /* handleidingen: uploaden (zelfde naam = vervangen), openen, verwijderen */

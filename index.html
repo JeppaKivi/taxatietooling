@@ -214,7 +214,11 @@ h2{font:800 11px var(--body);text-transform:uppercase;letter-spacing:1.4px;color
 .tm-kop b{font-size:13.5px}
 .tm-leg{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--ink-soft);align-items:center}
 .tm-leg span{display:inline-flex;align-items:center;gap:6px}
-#toegmatrix{table-layout:fixed;min-width:760px}
+#toegmatrix{table-layout:fixed;min-width:0}
+#toegmatrix th.tm-p{position:relative;overflow:hidden;text-overflow:ellipsis}
+.tm-rsz{position:absolute;right:0;top:4px;bottom:4px;width:9px;cursor:col-resize;border-radius:3px}
+.tm-rsz::after{content:'';position:absolute;right:3px;top:3px;bottom:3px;width:2px;border-radius:2px;background:var(--hair2);opacity:.5}
+.tm-rsz:hover::after,.tm-rsz.actief::after{opacity:1;background:var(--acc)}
 #toegmatrix th,#toegmatrix td{text-align:center}
 #toegmatrix th:first-child,#toegmatrix td:first-child{text-align:left}
 #toegmatrix th.tm-p{text-transform:none;letter-spacing:0;font:700 12px var(--body);color:var(--ink);line-height:1.2}
@@ -1123,17 +1127,25 @@ function tmStand(t, e){
   return tmIsAdm(ee) || !i.bewerkSlot || (i.bewerkers || []).map(lc).includes(ee) ? 'bew' : 'lees';
 }
 const tmUpload = (t, e) => { const i = t.instellingen || {}; if (i.klantloos || i.onder) return false; return tmIsAdm(e) || !!i.teamUpload || (!!i.bewerkSlot && (i.bewerkers || []).map(lc).includes(lc(e))); };
+/* kolombreedte teamleden: één greep voor alle teamleden (per computer onthouden) */
+document.addEventListener('pointerdown', e => { const g = e.target.closest && e.target.closest('.tm-rsz'); if (!g) return; e.preventDefault(); e.stopPropagation();
+  const t = $('toegmatrix'), x0 = e.clientX, w0 = Math.max(62, Math.min(200, LSH.get('tmPw', 124))), n = t.querySelectorAll('col.tm-pc').length; let w = w0; g.classList.add('actief'); document.body.classList.add('trekt');
+  const mv = ev => { w = Math.max(62, Math.min(200, Math.round(w0 + ev.clientX - x0))); t.querySelectorAll('col.tm-pc').forEach(c => c.style.width = w + 'px'); t.style.width = (422 + n * w) + 'px'; };
+  const up = () => { removeEventListener('pointermove', mv); removeEventListener('pointerup', up); document.body.classList.remove('trekt'); LSH.set('tmPw', w); renderToegMatrix(); };
+  addEventListener('pointermove', mv); addEventListener('pointerup', up); }, true);
+document.addEventListener('dblclick', e => { if (e.target.closest && e.target.closest('.tm-rsz')){ LSH.set('tmPw', 124); renderToegMatrix(); } });
 function renderToegMatrix(){
   const leden = TEAM.filter(m => m.actief).sort((a, b) => (b.rol === 'admin') - (a.rol === 'admin') || String(a.naam || a.email).localeCompare(String(b.naam || b.email)));
-  const pw = Math.max(92, Math.min(150, Math.floor(1100 / Math.max(1, leden.length))));
+  const pw = Math.max(62, Math.min(200, LSH.get('tmPw', 124))), smal = pw < 100;
   const cel = (t, m) => { const st = tmStand(t, m.email), up = st !== 'geen' && tmUpload(t, m.email), adm = m.rol === 'admin';
-    const txt = st === 'bew' ? '✎ aanpassen' : st === 'lees' ? '👁 lezen' : '— geen';
+    const txt = smal ? (st === 'bew' ? '✎' : st === 'lees' ? '👁' : '—') : st === 'bew' ? '✎ aanpassen' : st === 'lees' ? '👁 lezen' : '— geen';
     const tip = `${m.naam || m.email} · ${t.naam}: ${st === 'bew' ? 'kan openen en opslaan' : st === 'lees' ? 'kan openen en lezen, niets opslaan' : 'kan niet openen'}${up ? '; mag data inlezen en publiceren' : ''}. Klik: ${st === 'geen' ? (adm ? 'aanpassen' : 'lezen') : st === 'lees' ? 'aanpassen' : 'geen toegang'}.`;
     return `<td><button class="tm-cel ${st}" data-tmc="${esc(t.code)}|${esc(lc(m.email))}" title="${esc(tip)}">${txt}${up ? '<span class="up">⇪</span>' : ''}</button></td>`; };
   const mode = (t, ed) => { const i = t.instellingen || {}, sl = ed ? i.bewerkSlot : i.slot;
     return `<button class="knop klein tm-mode${sl ? ' tb-toeg dicht' : ''}" data-tm${ed ? 'b' : 'o'}="${esc(t.code)}" title="${ed ? 'Wie mag opslaan' : 'Wie kan openen'}: klik voor de volledige keuze">${sl ? '◐ selectie' : '● iedereen'}</button>`; };
-  $('toegmatrix').innerHTML = `<colgroup><col style="width:230px"><col style="width:96px"><col style="width:96px">${leden.map(() => `<col style="width:${pw}px">`).join('')}</colgroup>
-    <tr><th>Tool</th><th>Openen</th><th>Aanpassen</th>${leden.map(m => `<th class="tm-p">${esc(m.naam || m.email)}<span class="klein">${m.rol === 'admin' ? 'beheerder' : esc(String(m.email).split('@')[1] || '')}</span></th>`).join('')}</tr>`
+  $('toegmatrix').style.width = (230 + 96 + 96 + leden.length * pw) + 'px';
+  $('toegmatrix').innerHTML = `<colgroup><col style="width:230px"><col style="width:96px"><col style="width:96px">${leden.map(() => `<col class="tm-pc" style="width:${pw}px">`).join('')}</colgroup>
+    <tr><th>Tool</th><th>Openen</th><th>Aanpassen</th>${leden.map(m => `<th class="tm-p"><i class="tm-rsz" title="slepen: kolommen van alle teamleden smaller of breder · dubbelklik = standaard"></i>${esc(m.naam || m.email)}<span class="klein">${m.rol === 'admin' ? 'beheerder' : esc(String(m.email).split('@')[1] || '')}</span></th>`).join('')}</tr>`
     + toolVolgorde().map(t => { const og = t.instellingen && t.instellingen.onder;
       return `<tr class="${og ? 'tm-sub' : ''}${t.actief ? '' : ' tm-af'}"><td class="tm-tool"><b>${og ? '↳ ' : ''}${esc(t.naam)}</b><span class="klein">${t.actief ? '' : 'uit · '}${t.instellingen && t.instellingen.klantloos ? 'zonder klant' : og ? 'onder ' + esc((ALLETOOLS.find(x => x.code === og) || {}).naam || og) : 'per klant' + (t.instellingen && t.instellingen.teamUpload ? ' · team uploadt' : '')}</span></td>
         <td>${mode(t, false)}</td><td>${mode(t, true)}</td>${leden.map(m => cel(t, m)).join('')}</tr>`; }).join('');

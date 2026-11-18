@@ -208,7 +208,7 @@ h2{font:800 11px var(--body);text-transform:uppercase;letter-spacing:1.4px;color
 .badge{font:800 9.5px var(--body);text-transform:uppercase;letter-spacing:.7px;padding:2px 7px;border-radius:99px;background:var(--paper-dim);color:var(--ink-soft);align-self:flex-start}
 /* ---------- beheer ---------- */
 /* beheer mag breder dan de tegels erboven: gecentreerd op het scherm, tot 2200px */
-#beheerblok{width:min(2200px, calc(100vw - 56px));position:relative;left:50%;transform:translateX(-50%)}
+#beheerblok{width:min(var(--bhW, 1400px), calc(100vw - 56px));position:relative;left:50%;transform:translateX(-50%)}
 @media (max-width:860px){ #beheerblok{width:auto;left:0;transform:none} }
 /* toegangsmatrix: per tool × teamlid wie kan openen en aanpassen */
 .tm-kop{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin:0 0 8px}
@@ -371,8 +371,7 @@ th{font:800 9.5px var(--body);text-transform:uppercase;letter-spacing:.8px;color
         <div class="pane verborgen" data-pane="toolsbeheer">
         <div class="tm-kop"><b>Wie kan wat</b><span class="tm-leg"><span><i class="tm-cel bew" style="width:auto;min-height:0;cursor:default">✎ aanpassen</i>openen en opslaan</span><span><i class="tm-cel lees" style="width:auto;min-height:0;cursor:default">👁 lezen</i>openen, niets opslaan</span><span><i class="tm-cel geen" style="width:auto;min-height:0;cursor:default">— geen</i>tegel zichtbaar, niet te openen</span><span><b>⇪</b> mag ook data inlezen en publiceren</span></span></div>
         <div class="tabelwrap"><table id="toegmatrix"></table></div><div id="tm-msg"></div>
-        <p class="klein tm-noot">Klik op een vakje om te wisselen: geen → lezen → aanpassen. De kolommen <b>Openen</b> en <b>Aanpassen</b> laten zien of een tool voor iedereen open staat (ook voor nieuwe teamleden) of alleen voor een selectie; klik erop voor de volledige keuze. De beheerder kan altijd aanpassen, maar alleen openen als hij bij een selectie is aangevinkt.</p>
-        <div class="tm-kop"><b>Versies, handleidingen en volgorde</b></div>
+        <div class="tm-kop" style="margin-top:20px"><b>Versies, handleidingen en volgorde</b></div>
         <div class="tabelwrap"><table id="tooltabel"></table></div>
         <div class="rij"><input id="nt-code" placeholder="code (bv. bollengrafiek)" list="nt-codes"><datalist id="nt-codes"></datalist><input id="nt-naam" placeholder="naam op de tegel"><input id="nt-oms" placeholder="korte omschrijving" style="flex:2 1 200px">
           <label class="klein" style="display:flex;gap:5px;align-items:center"><input type="checkbox" id="nt-kl"> zonder klant</label><button class="knop klein prim" id="nt-toe">Tool aanmaken</button></div>
@@ -1136,7 +1135,7 @@ const tmUpload = (t, e) => { const i = t.instellingen || {}; if (i.klantloos || 
 /* kolombreedte teamleden: één greep voor alle teamleden (per computer onthouden) */
 document.addEventListener('pointerdown', e => { const g = e.target.closest && e.target.closest('.tm-rsz'); if (!g) return; e.preventDefault(); e.stopPropagation();
   const t = $('toegmatrix'), tt = $('tooltabel'), x0 = e.clientX, w0 = Math.max(62, Math.min(200, LSH.get('tmPw', 150))), n = t.querySelectorAll('col.tm-pc').length; let w = w0; g.classList.add('actief'); document.body.classList.add('trekt');
-  const mv = ev => { w = Math.max(62, Math.min(200, Math.round(w0 + ev.clientX - x0))); t.querySelectorAll('col.tm-pc').forEach(c => c.style.width = w + 'px'); t.style.width = (422 + n * w) + 'px'; if (tt) tt.style.width = t.style.width; };
+  const mv = ev => { w = Math.max(62, Math.min(200, Math.round(w0 + ev.clientX - x0))); t.querySelectorAll('col.tm-pc').forEach(c => c.style.width = w + 'px'); t.style.width = (422 + n * w) + 'px'; if (tt) tt.style.width = t.style.width; document.documentElement.style.setProperty('--bhW', (422 + n * w + 34) + 'px'); };
   const up = () => { removeEventListener('pointermove', mv); removeEventListener('pointerup', up); document.body.classList.remove('trekt'); LSH.set('tmPw', w); renderToegMatrix(); };
   addEventListener('pointermove', mv); addEventListener('pointerup', up); }, true);
 document.addEventListener('dblclick', e => { if (e.target.closest && e.target.closest('.tm-rsz')){ LSH.set('tmPw', 150); renderToegMatrix(); } });
@@ -1150,6 +1149,8 @@ function renderToegMatrix(){
   const mode = (t, ed) => { const i = t.instellingen || {}, sl = ed ? i.bewerkSlot : i.slot;
     return `<button class="knop klein tm-mode${sl ? ' tb-toeg dicht' : ''}" data-tm${ed ? 'b' : 'o'}="${esc(t.code)}" title="${ed ? 'Wie mag opslaan' : 'Wie kan openen'}: klik voor de volledige keuze">${sl ? '◐ selectie' : '● iedereen'}</button>`; };
   const tw = (230 + 96 + 96 + leden.length * pw) + 'px'; $('toegmatrix').style.width = tw; if ($('tooltabel')) $('tooltabel').style.width = tw;
+  /* het hele beheervlak (alle tabbladen) even breed als deze tabellen: geen leeg wit rechts */
+  document.documentElement.style.setProperty('--bhW', (422 + leden.length * pw + 34) + 'px');
   $('toegmatrix').innerHTML = `<colgroup><col style="width:230px"><col style="width:96px"><col style="width:96px">${leden.map(() => `<col class="tm-pc" style="width:${pw}px">`).join('')}</colgroup>
     <tr><th>Tool</th><th>Openen</th><th>Aanpassen</th>${leden.map(m => `<th class="tm-p"><i class="tm-rsz" title="slepen: kolommen van alle teamleden smaller of breder · dubbelklik = standaard"></i>${esc(m.naam || m.email)}<span class="klein">${m.rol === 'admin' ? 'beheerder' : esc(String(m.email).split('@')[1] || '')}</span></th>`).join('')}</tr>`
     + toolVolgorde().map(t => { const og = t.instellingen && t.instellingen.onder;

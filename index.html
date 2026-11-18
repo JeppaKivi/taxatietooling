@@ -325,6 +325,16 @@ th{font:800 9.5px var(--body);text-transform:uppercase;letter-spacing:.8px;color
 .tegel.ts.binnenkort{cursor:default;opacity:.6}
 .tegel.ts.binnenkort:hover{border-color:transparent;transform:none}
 .tegel.ts.vergelijk:before{content:none}
+/* klanttegels in stijl C: zelfde look als de tooltegels; statuskleuren uit het tegelpalet (groen = Markthuur wonen, oranje = BOG MOG ZOG-label, rood = Controletool) */
+.tegel.kts{--acc:var(--a-l);--acc-deep:var(--lab-l);--ok:#3E8C81;--warn:#B5620F;--bad:#C8463C;--vk:#9CCFC6;--vz:#9EB2CC;--de:#154473;--up:#B5652A;--ink:#1C2733;--ink-soft:#5E6B7A;min-height:0}
+:root[data-theme="dark"] .tegel.kts{--card:#154473;--ink:#FFFFFF;--ink-soft:#C9D6E6;--paper:#0F3A66;--paper-dim:rgba(255,255,255,.10);--hairline:rgba(255,255,255,.18);--hair2:rgba(255,255,255,.3);--acc:var(--a-d);--acc-deep:var(--lab-d);--ok:#6CC2B5;--warn:#F6C38A;--bad:#F28B7F;--vk:#3F8A88;--vz:rgba(255,255,255,.5);--de:#9CC1F2;--up:#F0A56E}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) .tegel.kts{--card:#154473;--ink:#FFFFFF;--ink-soft:#C9D6E6;--paper:#0F3A66;--paper-dim:rgba(255,255,255,.10);--hairline:rgba(255,255,255,.18);--hair2:rgba(255,255,255,.3);--acc:var(--a-d);--acc-deep:var(--lab-d);--ok:#6CC2B5;--warn:#F6C38A;--bad:#F28B7F;--vk:#3F8A88;--vz:rgba(255,255,255,.5);--de:#9CC1F2;--up:#F0A56E} }
+.tegel.kts .kr .kkop{display:none}
+.tegel.kts .kr{display:flex;flex-direction:column;gap:4px;width:100%}
+.tegel.kts .ts-cat{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.tegel.kts .t{padding-top:6px}
+.tegel.kts .tegelactie{margin:0;align-self:center;color:var(--tlink);border-color:var(--tx)}
+.tegel.kts .v.online:empty{display:none}
 /* klanttegels in de kleuren van de gekozen tool (variabelen --a-l e.d. staan op #klanten, gezet in renderKlanten) */
 #klanten .tegel:not(.ts){--acc:var(--a-l,#4A7FB5);--acc-deep:var(--lab-l,#2E5C8A);--ok:#3A8F64;--warn:#E08A2E;--bad:#C8463C;--vk:#5FA89E;--vz:#9EB2CC;--de:#154473;--up:#B5652A;background:#FFFFFF;color:#1C2733;border:1px solid transparent;border-radius:16px;box-shadow:0 1px 2px rgba(16,40,70,.08),0 6px 18px rgba(16,40,70,.08);position:relative}
 #klanten .tegel:not(.ts):not(.nieuw):before{content:"";position:absolute;left:0;top:14px;bottom:14px;width:3px;border-radius:0 3px 3px 0;background:var(--a-l)}
@@ -703,17 +713,21 @@ async function verversCtTegels(code){
   }
   lijnUit();
 }
+/* klanttegel: label linksboven (aantallen) en versie rechtsboven (toolversie waarmee het oordeel is berekend, anders de huidige) */
+function klantLabel(d){ if (!d) return 'nog geen data'; const m = d.meta || {}, t = m.tel || {}; const n = t.n != null ? t.n : m.complexen != null ? m.complexen : m.n, v = t.vhe != null ? t.vhe : m.vhe;
+  return [n != null ? nl(n) + ' complexen' : '', v ? nl(v) + (d.tool_code === 'bog_mog_zog' ? ' eenheden' : ' VHE') : ''].filter(Boolean).join(' · ') || (d.snapshot || ''); }
+function klantVersie(d, tool){ const t = d && d.meta && d.meta.tel || {}, v = d && d.tool_code === 'markthuur_wonen' ? t.tool : t.versie; return /^\d+(\.\d+)*$/.test(String(v || '')) ? String(v) : appVersie(tool); }
 function klantRegel(d, live){
   if (!d) return '<span class="o"><i>nog geen data gepubliceerd</i></span>';
   const m = d.meta || {}, t = live && live.tel || m.tel;
   const meld = live && live.oud ? `<span class="mfmeld" title="${esc(live.va.notitie || '')}"><b>Let op: ${live.va.versie > live.gz.versie ? 'nieuwe' : 'andere'} modelmatige formule van toepassing</b> (${esc(mfKort(live.va))}${live.vast ? ', vastgezet voor deze klant' : ''})<br>goed ${nl(live.oud.goed)} → <b>${nl(t.goed)}</b> · aandacht ${nl(live.oud.aand)} → <b>${nl(t.aand)}</b>${live.oud.ntg !== t.ntg ? ` · niet getoetst ${nl(live.oud.ntg)} → ${nl(t.ntg)}` : ''}<span class="klein"> · verdwijnt als je de klant opent</span></span>` : '';
-  if (t && t.goed != null) return meld + `<span class="o">${esc(t.versie || m.versie || '')}${t.n ? ' · ' + nl(t.n) + ' complexen' : ''}${live && live.va && (live.vast || MFH.length > 1) ? ' · formule v' + live.va.versie : ''}</span>
+  if (t && t.goed != null) return meld + `<span class="o kkop">${esc(t.versie || m.versie || '')}${t.n ? ' · ' + nl(t.n) + ' complexen' : ''}${live && live.va && (live.vast || MFH.length > 1) ? ' · formule v' + live.va.versie : ''}</span>
     <span class="balk"><i style="width:${(t.goed / Math.max(1, t.goed + t.aand) * 100).toFixed(1)}%"></i><i style="width:${(t.aand / Math.max(1, t.goed + t.aand) * 100).toFixed(1)}%"></i></span>
     <span class="tel"><span class="g"><b>${nl(t.goed)}</b>goed</span><span class="a"><b>${nl(t.aand)}</b>aandacht</span>${t.ntg ? `<span class="n" title="geen modelmatige factor (bijv. studenteneenheden) — niet getoetst"><b>${nl(t.ntg)}</b>niet getoetst</span>` : ''}</span>`;
   /* BOG/MOG/ZOG: complexen en eenheden, en een balk met het oordeel (voorzet = nog geen eigen markthuur) */
   if (d.tool_code === 'bog_mog_zog'){
     const n = t ? t.n : m.complexen, v = t ? t.vhe : m.vhe;
-    const kop = `<span class="o">${n != null ? nl(n) + ' complexen' : ''}${v != null ? ' · ' + nl(v) + ' eenheden' : ''}</span>`;
+    const kop = `<span class="o kkop">${n != null ? nl(n) + ' complexen' : ''}${v != null ? ' · ' + nl(v) + ' eenheden' : ''}</span>`;
     if (!t) return kop + '<span class="o klein"><i>oordeel verschijnt na de eerstvolgende keer openen</i></span>';
     const del = [['ok', 'var(--ok)', 'binnen'], ['warn', 'var(--warn)', 'aandacht'], ['bad', 'var(--bad)', 'buiten'], ['vz', 'var(--vz,#9DB3CF)', 'voorzet']].filter(x => t[x[0]] > 0);
     return kop + `<span class="balk4">${del.map(([k, kl]) => `<i style="flex:${t[k]};background:${kl}"></i>`).join('')}</span>
@@ -721,7 +735,7 @@ function klantRegel(d, live){
   }
   /* Markthuur wonen: oordeelbalk (groen / verklaard / oranje / rood) en een histogram van de afwijking tabel t.o.v. referenties */
   if (d.tool_code === 'markthuur_wonen'){
-    const kop = `<span class="o">${esc(d.snapshot || '')}${(t ? t.n : m.complexen) != null ? ' · ' + nl(t ? t.n : m.complexen) + ' complexen' : ''}${(t ? t.vhe : m.vhe) ? ' · ' + nl(t ? t.vhe : m.vhe) + ' VHE' : ''}</span>`;
+    const kop = `<span class="o kkop">${esc(d.snapshot || '')}${(t ? t.n : m.complexen) != null ? ' · ' + nl(t ? t.n : m.complexen) + ' complexen' : ''}${(t ? t.vhe : m.vhe) ? ' · ' + nl(t ? t.vhe : m.vhe) + ' VHE' : ''}</span>`;
     if (!t || t.ok == null) return kop + '<span class="o klein"><i>oordeel verschijnt na de eerstvolgende keer openen</i></span>';
     const del = [['ok', 'var(--ok)', 'groen'], ['vk', 'var(--vk,#4E9C93)', 'verklaard'], ['warn', 'var(--warn)', 'oranje'], ['bad', 'var(--bad)', 'rood']].filter(x => t[x[0]] > 0);
     const H = t.hist || [], mx = Math.max(1, ...H), tg = t.tolG || 15, to = t.tolO || 20;
@@ -729,11 +743,11 @@ function klantRegel(d, live){
       return `<rect x="${(4 + i * 14.8).toFixed(1)}" y="${(36 - h).toFixed(1)}" width="11" height="${h.toFixed(1)}" rx="1.5" fill="${kl}" fill-opacity="${i === 6 ? 1 : .8}"><title>${c > 0 ? '+' : ''}${c}%: ${n} complexen</title></rect>`; }).join('')}<line x1="99.6" x2="99.6" y1="0" y2="37" stroke="var(--ink)" stroke-width=".8" stroke-dasharray="2 2"/><line x1="2" x2="198" y1="36.5" y2="36.5" stroke="var(--hair2)" stroke-width=".8"/><text x="2" y="45" font-size="7" fill="var(--ink-soft)">−30%</text><text x="100" y="45" font-size="7" fill="var(--ink-soft)" text-anchor="middle">tabel = refs</text><text x="198" y="45" font-size="7" fill="var(--ink-soft)" text-anchor="end">+30%</text></svg>` : '';
     return kop + `<span class="balk4">${del.map(([k, kl]) => `<i style="flex:${t[k]};background:${kl}"></i>`).join('')}</span>
       <span class="tel4">${del.map(([k, kl, nm]) => `<span><b style="color:${kl}">${nl(t[k])}</b>${nm}</span>`).join('')}</span>${hist}
-      ${t.afw != null ? `<span class="o klein">tabel t.o.v. referenties: <b>${t.afw > 0 ? '+' : ''}${nl(t.afw * 100, 1)}%</b> over de hele portefeuille${t.vs ? ' · ' + nl(t.vs) + ' met voorstel' : ''}</span>` : ''}`;
+      ${t.afw != null ? `<span class="o klein" title="markthuur uit de tabel t.o.v. de referenties, over de hele portefeuille">tabel vs referenties <b>${t.afw > 0 ? '+' : ''}${nl(t.afw * 100, 1)}%</b>${t.vs ? ' · ' + nl(t.vs) + ' met voorstel' : ''}</span>` : ''}`;
   }
   /* Disconteringsvoet: gewogen DV DE / UP met Δ vorig jaar, spreiding als gespiegeld histogram (DE boven, UP onder) en de meldingen */
   if (d.tool_code === 'disconteringsvoet'){
-    const kop = `<span class="o">${m.complexen != null ? nl(m.complexen) + ' complexen' : esc(d.snapshot || '')}${m.vhe ? ' · ' + nl(m.vhe) + ' VHE' : ''}</span>`;
+    const kop = `<span class="o kkop">${m.complexen != null ? nl(m.complexen) + ' complexen' : esc(d.snapshot || '')}${m.vhe ? ' · ' + nl(m.vhe) + ' VHE' : ''}</span>`;
     if (m.de == null) return kop + '<span class="o klein"><i>cijfers verschijnen na de eerstvolgende keer openen</i></span>';
     const pc = v => nl(v * 100, 2) + '%', dl = v => v == null || Math.abs(v) < 5e-5 ? '' : `<i class="${v > 0 ? 'op' : 'af'}" title="t.o.v. vorig jaar">${v > 0 ? '▲ +' : '▼ −'}${nl(Math.abs(v) * 100, 2)} %-pt</i>`;
     const fig = (cl, nm, v, dv) => `<span class="dvf ${cl}"><small>${nm}</small><b>${pc(v)}</b>${dl(dv)}</span>`;
@@ -763,12 +777,13 @@ function renderKlanten(code){
   $('klanten').innerHTML = subs.map(t => tsTegel(t.code, t.naam, {compact: true, cls: ' vergelijk' + (magIn(t) ? '' : ' slot'), attr: ` data-sub="${esc(t.code)}"` + (magIn(t) ? '' : ' title="Niet voor deze gebruiker beschikbaar"'), ver: t.versie,
       badges: t.actief ? '' : '<span class="badge">uit · alleen jij</span>', pil: lijst.length + ' klant' + (lijst.length === 1 ? '' : 'en'), open: magIn(t) ? 'Openen →' : '🔒 niet beschikbaar'})).join('')
     + lijst.map(k => { const d = laatste[k.code], kz = (KEUZETEL[code] || {})[k.code];
-    return `<button class="tegel" data-klant="${esc(k.code)}"><span class="t">${esc(k.naam)}</span>
+    const info = [d ? 'gepubliceerd ' + tijd(d.op) : '', d && d.snapshot ? d.snapshot : '', kz && kz.n ? kz.n + ' aanpassing' + (kz.n === 1 ? '' : 'en') + ' · laatst ' + tijd(kz.op) : ''].filter(Boolean).join('\n');
+    return `<button class="tegel ts kts" data-klant="${esc(k.code)}"><span class="ts-kop"><span class="ts-cat">${esc(klantLabel(d))}</span>${klantVersie(d, tool) ? `<span class="ts-ver">v${esc(klantVersie(d, tool))}</span>` : ''}</span>
       <span class="kr" data-kr="${esc(k.code)}">${klantRegel(d)}</span>
-      <span class="v">${d ? `<span>gepubliceerd ${esc(tijd(d.op))}</span>` : ''}${kz && kz.n ? `<span>${kz.n} aanpassing${kz.n === 1 ? '' : 'en'} · laatst ${esc(tijd(kz.op))}</span>` : ''}</span>
       ${kz && (kz.tb || kz.ak) ? `<span class="v">${kz.tb ? `<span class="stpil tb">${kz.tb} ter beoordeling</span>` : ''}${kz.ak ? `<span class="stpil ak">${kz.ak} akkoord</span>` : ''}</span>` : ''}
+      <span class="t">${esc(k.naam)}</span>
       <span class="v online" id="online-${esc(k.code)}"></span>
-      ${(ADM || magUploaden(tool)) && d ? `<span class="tegelactie" data-dataklant="${esc(k.code)}" title="tool openen in Data &amp; import om nieuwe data in te lezen en te publiceren">⇪ data bijwerken</span>` : ''}</button>`; }).join('')
+      <span class="ts-voet">${d ? `<span class="ts-pil" title="${esc(info)}">${esc(new Date(d.op).toLocaleDateString('nl-NL', {day: 'numeric', month: 'short'}))}</span>` : ''}${(ADM || magUploaden(tool)) && d ? `<span class="tegelactie" data-dataklant="${esc(k.code)}" title="tool openen in Data &amp; import om nieuwe data in te lezen en te publiceren">⇪ data</span>` : ''}<span class="ts-open">Openen →</span></span></button>`; }).join('')
     + (ADM || magUploaden(tool) ? '<button class="tegel nieuw" id="nieuweklant">+ Nieuwe klant</button>' : '')
     + (!lijst.length && !ADM && !magUploaden(tool) ? '<p class="klein">Nog geen klanten met data voor deze tool.</p>' : '');
   $('klanten').querySelectorAll('[data-klant]').forEach(b => b.onclick = e => openTool(tool, b.dataset.klant, e.target.closest('[data-dataklant]') ? 'data' : null));

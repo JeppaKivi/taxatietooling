@@ -669,10 +669,11 @@ function klantRegel(d, live){
     const H = m.hist, W = 200;
     let hist = '';
     if (H && H.de && H.de.length){ const n = H.de.length, bw = (W - 4) / n, mx = Math.max(1, ...H.de, ...H.up), x = v => 2 + (v - H.lo) / H.stap * bw;
-      const bar = (a, boven, kl, nm) => a.map((c, i) => { const h = c ? Math.max(1.2, c / mx * 19) : 0, lo = H.lo + i * H.stap;
-        return c ? `<rect x="${(2 + i * bw + .6).toFixed(1)}" y="${(boven ? 21 - h : 23).toFixed(1)}" width="${Math.max(1, bw - 1.2).toFixed(1)}" height="${h.toFixed(1)}" rx="1" fill="${kl}"><title>${nm} ${nl(lo * 100, 2)}–${nl((lo + H.stap) * 100, 2)}%: ${c} complex${c === 1 ? '' : 'en'}</title></rect>` : ''; }).join('');
-      const tick = (v, y1, y2, kl) => `<line x1="${x(v).toFixed(1)}" x2="${x(v).toFixed(1)}" y1="${y1}" y2="${y2}" stroke="${kl}" stroke-width="1.2"/>`;
-      hist = `<svg class="dvhist" viewBox="0 0 ${W} 44" width="100%" height="44" preserveAspectRatio="none" aria-hidden="true">${bar(H.de, true, 'var(--acc-deep)', 'DE')}${bar(H.up, false, '#B9692A', 'UP')}<line x1="2" x2="${W - 2}" y1="22" y2="22" stroke="var(--hair2)" stroke-width=".8"/>${tick(m.de, 0, 22, 'var(--ink)')}${tick(m.up, 22, 44, 'var(--ink)')}</svg><span class="dvas"><span>${nl(H.lo * 100, 1)}%</span><span><i class="de"></i>DE <i class="up"></i>UP <i class="gw"></i>gewogen</span><span>${nl((H.lo + n * H.stap) * 100, 1)}%</span></span>`; }
+      /* DE en UP over elkaar vanaf dezelfde as: per klasse eerst de hoogste staaf, de laagste ervoor */
+      const rect = (c, i, kl, nm) => { const h = Math.max(1.2, c / mx * 38), lo = H.lo + i * H.stap; return `<rect x="${(2 + i * bw + .6).toFixed(1)}" y="${(41 - h).toFixed(1)}" width="${Math.max(1, bw - 1.2).toFixed(1)}" height="${h.toFixed(1)}" rx="1" fill="${kl}"><title>${nm} ${nl(lo * 100, 2)}–${nl((lo + H.stap) * 100, 2)}%: ${c} complex${c === 1 ? '' : 'en'}</title></rect>`; };
+      const bars = H.de.map((d, i) => { const u = H.up[i] || 0, D = d ? rect(d, i, 'var(--acc-deep)', 'DE') : '', U = u ? rect(u, i, '#B9692A', 'UP') : ''; return d >= u ? D + U : U + D; }).join('');
+      const tick = (v, kl) => `<line x1="${x(v).toFixed(1)}" x2="${x(v).toFixed(1)}" y1="0" y2="41" stroke="${kl}" stroke-width="1.3" stroke-dasharray="2 1.5"/>`;
+      hist = `<svg class="dvhist" viewBox="0 0 ${W} 44" width="100%" height="44" preserveAspectRatio="none" aria-hidden="true">${bars}<line x1="2" x2="${W - 2}" y1="41.5" y2="41.5" stroke="var(--hair2)" stroke-width=".8"/>${tick(m.de, 'var(--ink)')}${tick(m.up, 'var(--ink)')}</svg><span class="dvas"><span>${nl(H.lo * 100, 1)}%</span><span><i class="de"></i>DE <i class="up"></i>UP <i class="gw"></i>gewogen</span><span>${nl((H.lo + n * H.stap) * 100, 1)}%</span></span>`; }
     const ok = Math.max(0, (m.complexen || 0) - (m.nFout || 0) - (m.nWarn || 0));
     const tel = m.nFout == null ? [] : [[ok, 'var(--ok)', 'in orde'], [m.nWarn, 'var(--warn)', 'signaal'], [m.nFout, 'var(--bad)', 'fout']].filter(x => x[0] > 0);
     return kop + `<span class="dvfig">${fig('de', 'Doorexploiteren', m.de, m.dDE)}${fig('up', 'Uitponden', m.up, m.dUP)}</span>${hist}

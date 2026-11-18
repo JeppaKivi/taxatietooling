@@ -182,7 +182,7 @@ h2{font:800 11px var(--body);text-transform:uppercase;letter-spacing:1.4px;color
 .tegel .tel4 b{font:800 17px var(--body);font-variant-numeric:tabular-nums;margin-right:3px}
 .tegel .dvfig{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:8px 0 2px}
 .tegel .dvf{display:flex;flex-direction:column;border-left:3px solid var(--acc-deep);padding-left:8px;line-height:1.15}
-.tegel .dvf.up{border-left-color:#2A8C82}
+.tegel .dvf.up{border-left-color:#B9692A}
 .tegel .dvf small{font:700 9.5px var(--body);text-transform:uppercase;letter-spacing:.8px;color:var(--ink-soft)}
 .tegel .dvf b{font:800 22px var(--body);font-variant-numeric:tabular-nums;color:var(--ink)}
 .tegel .dvf i{font:600 11px var(--body);font-style:normal;font-variant-numeric:tabular-nums}
@@ -190,7 +190,7 @@ h2{font:800 11px var(--body);text-transform:uppercase;letter-spacing:1.4px;color
 .tegel .dvhist{display:block;margin-top:6px}
 .tegel .dvas{display:flex;justify-content:space-between;font:500 10px var(--body);color:var(--ink-soft);font-variant-numeric:tabular-nums;margin-top:1px}
 .tegel .dvas i{display:inline-block;width:8px;height:8px;border-radius:2px;margin:0 3px 0 6px;vertical-align:-1px;background:var(--acc-deep)}
-.tegel .dvas i.up{background:#2A8C82} .tegel .dvas i.gw{width:1.5px;border-radius:0;background:var(--ink);height:10px}
+.tegel .dvas i.up{background:#B9692A} .tegel .dvas i.gw{width:1.5px;border-radius:0;background:var(--ink);height:10px}
 .stpil{font:800 9.5px var(--body);text-transform:uppercase;letter-spacing:.6px;padding:2px 7px;border-radius:99px}
 .stpil.tb{background:color-mix(in srgb,var(--warn) 18%,transparent);color:var(--warn)}
 .stpil.ak{background:color-mix(in srgb,var(--ok) 16%,transparent);color:var(--ok)}
@@ -672,7 +672,7 @@ function klantRegel(d, live){
       const bar = (a, boven, kl, nm) => a.map((c, i) => { const h = c ? Math.max(1.2, c / mx * 19) : 0, lo = H.lo + i * H.stap;
         return c ? `<rect x="${(2 + i * bw + .6).toFixed(1)}" y="${(boven ? 21 - h : 23).toFixed(1)}" width="${Math.max(1, bw - 1.2).toFixed(1)}" height="${h.toFixed(1)}" rx="1" fill="${kl}"><title>${nm} ${nl(lo * 100, 2)}–${nl((lo + H.stap) * 100, 2)}%: ${c} complex${c === 1 ? '' : 'en'}</title></rect>` : ''; }).join('');
       const tick = (v, y1, y2, kl) => `<line x1="${x(v).toFixed(1)}" x2="${x(v).toFixed(1)}" y1="${y1}" y2="${y2}" stroke="${kl}" stroke-width="1.2"/>`;
-      hist = `<svg class="dvhist" viewBox="0 0 ${W} 44" width="100%" height="44" preserveAspectRatio="none" aria-hidden="true">${bar(H.de, true, 'var(--acc-deep)', 'DE')}${bar(H.up, false, '#2A8C82', 'UP')}<line x1="2" x2="${W - 2}" y1="22" y2="22" stroke="var(--hair2)" stroke-width=".8"/>${tick(m.de, 0, 22, 'var(--ink)')}${tick(m.up, 22, 44, 'var(--ink)')}</svg><span class="dvas"><span>${nl(H.lo * 100, 1)}%</span><span><i class="de"></i>DE <i class="up"></i>UP <i class="gw"></i>gewogen</span><span>${nl((H.lo + n * H.stap) * 100, 1)}%</span></span>`; }
+      hist = `<svg class="dvhist" viewBox="0 0 ${W} 44" width="100%" height="44" preserveAspectRatio="none" aria-hidden="true">${bar(H.de, true, 'var(--acc-deep)', 'DE')}${bar(H.up, false, '#B9692A', 'UP')}<line x1="2" x2="${W - 2}" y1="22" y2="22" stroke="var(--hair2)" stroke-width=".8"/>${tick(m.de, 0, 22, 'var(--ink)')}${tick(m.up, 22, 44, 'var(--ink)')}</svg><span class="dvas"><span>${nl(H.lo * 100, 1)}%</span><span><i class="de"></i>DE <i class="up"></i>UP <i class="gw"></i>gewogen</span><span>${nl((H.lo + n * H.stap) * 100, 1)}%</span></span>`; }
     const ok = Math.max(0, (m.complexen || 0) - (m.nFout || 0) - (m.nWarn || 0));
     const tel = m.nFout == null ? [] : [[ok, 'var(--ok)', 'in orde'], [m.nWarn, 'var(--warn)', 'signaal'], [m.nFout, 'var(--bad)', 'fout']].filter(x => x[0] > 0);
     return kop + `<span class="dvfig">${fig('de', 'Doorexploiteren', m.de, m.dDE)}${fig('up', 'Uitponden', m.up, m.dUP)}</span>${hist}

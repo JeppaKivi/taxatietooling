@@ -716,7 +716,9 @@ async function verversCtTegels(code){
 /* klanttegel: label linksboven (aantallen) en versie rechtsboven (toolversie waarmee het oordeel is berekend, anders de huidige) */
 function klantLabel(d){ if (!d) return 'nog geen data'; const m = d.meta || {}, t = m.tel || {}; const n = t.n != null ? t.n : m.complexen != null ? m.complexen : m.n, v = t.vhe != null ? t.vhe : m.vhe;
   return [n != null ? nl(n) + ' complexen' : '', v ? nl(v) + (d.tool_code === 'bog_mog_zog' ? ' eenheden' : ' VHE') : ''].filter(Boolean).join(' · ') || (d.snapshot || ''); }
-function klantVersie(d, tool){ const t = d && d.meta && d.meta.tel || {}, v = d && d.tool_code === 'markthuur_wonen' ? t.tool : t.versie; return /^\d+(\.\d+)*$/.test(String(v || '')) ? String(v) : appVersie(tool); }
+/* rechtsboven altijd de huidige toolversie (die opent iedereen); de versie waarmee de telling op de tegel is berekend staat alleen in de tooltip */
+function klantVersie(d, tool){ return appVersie(tool); }
+function tellingVersie(d){ const t = d && d.meta && d.meta.tel || {}, v = d && d.tool_code === 'markthuur_wonen' ? t.tool : t.versie; return /^\d+(\.\d+)*$/.test(String(v || '')) ? String(v) : ''; }
 function klantRegel(d, live){
   if (!d) return '<span class="o"><i>nog geen data gepubliceerd</i></span>';
   const m = d.meta || {}, t = live && live.tel || m.tel;
@@ -777,7 +779,7 @@ function renderKlanten(code){
   $('klanten').innerHTML = subs.map(t => tsTegel(t.code, t.naam, {compact: true, cls: ' vergelijk' + (magIn(t) ? '' : ' slot'), attr: ` data-sub="${esc(t.code)}"` + (magIn(t) ? '' : ' title="Niet voor deze gebruiker beschikbaar"'), ver: t.versie,
       badges: t.actief ? '' : '<span class="badge">uit · alleen jij</span>', pil: lijst.length + ' klant' + (lijst.length === 1 ? '' : 'en'), open: magIn(t) ? 'Openen →' : '🔒 niet beschikbaar'})).join('')
     + lijst.map(k => { const d = laatste[k.code], kz = (KEUZETEL[code] || {})[k.code];
-    const info = [d ? 'gepubliceerd ' + tijd(d.op) : '', d && d.snapshot ? d.snapshot : '', kz && kz.n ? kz.n + ' aanpassing' + (kz.n === 1 ? '' : 'en') + ' · laatst ' + tijd(kz.op) : ''].filter(Boolean).join('\n');
+    const info = [d ? 'gepubliceerd ' + tijd(d.op) : '', d && d.snapshot ? d.snapshot : '', kz && kz.n ? kz.n + ' aanpassing' + (kz.n === 1 ? '' : 'en') + ' · laatst ' + tijd(kz.op) : '', tellingVersie(d) && tellingVersie(d) !== appVersie(tool) ? 'telling op de tegel berekend met v' + tellingVersie(d) + ', wordt bijgewerkt bij de volgende keer openen' : ''].filter(Boolean).join('\n');
     return `<button class="tegel ts kts" data-klant="${esc(k.code)}"><span class="ts-kop"><span class="ts-cat">${esc(klantLabel(d))}</span>${klantVersie(d, tool) ? `<span class="ts-ver">v${esc(klantVersie(d, tool))}</span>` : ''}</span>
       <span class="kr" data-kr="${esc(k.code)}">${klantRegel(d)}</span>
       ${kz && (kz.tb || kz.ak) ? `<span class="v">${kz.tb ? `<span class="stpil tb">${kz.tb} ter beoordeling</span>` : ''}${kz.ak ? `<span class="stpil ak">${kz.ak} akkoord</span>` : ''}</span>` : ''}

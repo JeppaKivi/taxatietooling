@@ -48,12 +48,11 @@ button,input,select{font-family:var(--body);font-size:13px}
 .knop.prim{background:var(--acc-deep);border-color:var(--acc-deep);color:#fff}
 .knop.prim:hover{background:var(--acc)}
 .knop.klein{padding:5px 10px;font-size:12px;border-radius:7px}
-#tooltabel{table-layout:fixed;width:100%}
+#tooltabel{table-layout:fixed;width:100%;min-width:0}
 #tooltabel td{vertical-align:middle}
-#tooltabel td:nth-child(2){white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:12px;color:var(--ink-soft)}
+#tooltabel td:nth-child(2){white-space:nowrap;font-variant-numeric:tabular-nums}
 #tooltabel th{white-space:nowrap}
 #tooltabel td{padding-top:9px;padding-bottom:9px}
-#tooltabel td:nth-child(4) .knop{margin-top:4px}
 #tooltabel .tb-kies{flex:1 1 auto;min-width:0;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;text-align:center}
 #tooltabel .tb-kies.gekozen{border-color:var(--sage, #2A8C82);color:var(--ink)}
 #tooltabel td:last-child > div{gap:5px !important}
@@ -131,8 +130,10 @@ body.sleept-blok{user-select:none;cursor:grabbing}
 .hlmenu .leeg{padding:8px;color:var(--ink-soft);font-size:12px}
 .tb-hl{display:flex;flex-direction:column;gap:4px;font-size:12px;min-width:0}
 .tb-hl .r{display:flex;gap:6px;align-items:center;min-width:0}
-.tb-hl .r a{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.tb-hl .r a{cursor:pointer;color:var(--ink)} .tb-hl .r .x{flex:none;cursor:pointer;color:var(--ink-soft);margin-left:auto} .tb-hl .r .x:hover{color:var(--bad)}
+.tb-hl .r a{flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tb-hl .r a{cursor:pointer;color:var(--ink)} .tb-hl .r .x{flex:none;cursor:pointer;color:var(--ink-soft)} .tb-hl .r .x:hover{color:var(--bad)}
+.tb-hl .tb-pdf{flex:none;cursor:pointer;align-self:flex-start;margin-left:6px}
+.tb-hl > .tb-pdf{margin-left:0}
 .tegel .mthist{display:block;margin-top:6px}
 #onlineknop .stip{display:inline-block;width:7px;height:7px;border-radius:50%;background:#86D7A2;margin-right:6px;vertical-align:1px}
 #onlineknop.leeg .stip{background:rgba(255,255,255,.4)}
@@ -1134,21 +1135,21 @@ function tmStand(t, e){
 const tmUpload = (t, e) => { const i = t.instellingen || {}; if (i.klantloos || i.onder) return false; return tmIsAdm(e) || !!i.teamUpload || (!!i.bewerkSlot && (i.bewerkers || []).map(lc).includes(lc(e))); };
 /* kolombreedte teamleden: één greep voor alle teamleden (per computer onthouden) */
 document.addEventListener('pointerdown', e => { const g = e.target.closest && e.target.closest('.tm-rsz'); if (!g) return; e.preventDefault(); e.stopPropagation();
-  const t = $('toegmatrix'), x0 = e.clientX, w0 = Math.max(62, Math.min(200, LSH.get('tmPw', 124))), n = t.querySelectorAll('col.tm-pc').length; let w = w0; g.classList.add('actief'); document.body.classList.add('trekt');
-  const mv = ev => { w = Math.max(62, Math.min(200, Math.round(w0 + ev.clientX - x0))); t.querySelectorAll('col.tm-pc').forEach(c => c.style.width = w + 'px'); t.style.width = (422 + n * w) + 'px'; };
+  const t = $('toegmatrix'), tt = $('tooltabel'), x0 = e.clientX, w0 = Math.max(62, Math.min(200, LSH.get('tmPw', 150))), n = t.querySelectorAll('col.tm-pc').length; let w = w0; g.classList.add('actief'); document.body.classList.add('trekt');
+  const mv = ev => { w = Math.max(62, Math.min(200, Math.round(w0 + ev.clientX - x0))); t.querySelectorAll('col.tm-pc').forEach(c => c.style.width = w + 'px'); t.style.width = (422 + n * w) + 'px'; if (tt) tt.style.width = t.style.width; };
   const up = () => { removeEventListener('pointermove', mv); removeEventListener('pointerup', up); document.body.classList.remove('trekt'); LSH.set('tmPw', w); renderToegMatrix(); };
   addEventListener('pointermove', mv); addEventListener('pointerup', up); }, true);
-document.addEventListener('dblclick', e => { if (e.target.closest && e.target.closest('.tm-rsz')){ LSH.set('tmPw', 124); renderToegMatrix(); } });
+document.addEventListener('dblclick', e => { if (e.target.closest && e.target.closest('.tm-rsz')){ LSH.set('tmPw', 150); renderToegMatrix(); } });
 function renderToegMatrix(){
   const leden = TEAM.filter(m => m.actief).sort((a, b) => (b.rol === 'admin') - (a.rol === 'admin') || String(a.naam || a.email).localeCompare(String(b.naam || b.email)));
-  const pw = Math.max(62, Math.min(200, LSH.get('tmPw', 124))), smal = pw < 100;
+  const pw = Math.max(62, Math.min(200, LSH.get('tmPw', 150))), smal = pw < 100;
   const cel = (t, m) => { const st = tmStand(t, m.email), up = st !== 'geen' && tmUpload(t, m.email), adm = m.rol === 'admin';
     const txt = smal ? (st === 'bew' ? '✎' : st === 'lees' ? '👁' : '—') : st === 'bew' ? '✎ aanpassen' : st === 'lees' ? '👁 lezen' : '— geen';
     const tip = `${m.naam || m.email} · ${t.naam}: ${st === 'bew' ? 'kan openen en opslaan' : st === 'lees' ? 'kan openen en lezen, niets opslaan' : 'kan niet openen'}${up ? '; mag data inlezen en publiceren' : ''}. Klik: ${st === 'geen' ? (adm ? 'aanpassen' : 'lezen') : st === 'lees' ? 'aanpassen' : 'geen toegang'}.`;
     return `<td><button class="tm-cel ${st}" data-tmc="${esc(t.code)}|${esc(lc(m.email))}" title="${esc(tip)}">${txt}${up ? '<span class="up">⇪</span>' : ''}</button></td>`; };
   const mode = (t, ed) => { const i = t.instellingen || {}, sl = ed ? i.bewerkSlot : i.slot;
     return `<button class="knop klein tm-mode${sl ? ' tb-toeg dicht' : ''}" data-tm${ed ? 'b' : 'o'}="${esc(t.code)}" title="${ed ? 'Wie mag opslaan' : 'Wie kan openen'}: klik voor de volledige keuze">${sl ? '◐ selectie' : '● iedereen'}</button>`; };
-  $('toegmatrix').style.width = (230 + 96 + 96 + leden.length * pw) + 'px';
+  const tw = (230 + 96 + 96 + leden.length * pw) + 'px'; $('toegmatrix').style.width = tw; if ($('tooltabel')) $('tooltabel').style.width = tw;
   $('toegmatrix').innerHTML = `<colgroup><col style="width:230px"><col style="width:96px"><col style="width:96px">${leden.map(() => `<col class="tm-pc" style="width:${pw}px">`).join('')}</colgroup>
     <tr><th>Tool</th><th>Openen</th><th>Aanpassen</th>${leden.map(m => `<th class="tm-p"><i class="tm-rsz" title="slepen: kolommen van alle teamleden smaller of breder · dubbelklik = standaard"></i>${esc(m.naam || m.email)}<span class="klein">${m.rol === 'admin' ? 'beheerder' : esc(String(m.email).split('@')[1] || '')}</span></th>`).join('')}</tr>`
     + toolVolgorde().map(t => { const og = t.instellingen && t.instellingen.onder;
@@ -1177,12 +1178,11 @@ function renderToegMatrix(){
 }
 function renderToolBeheer(){
   $('nt-codes').innerHTML = BINNENKORT.filter(([c]) => !ALLETOOLS.find(t => t.code === c)).map(([c, n]) => `<option value="${esc(c)}">${esc(n)}</option>`).join('');
-  $('tooltabel').innerHTML = '<colgroup><col style="width:23%"><col style="width:9%"><col style="width:5%"><col style="width:14%"><col style="width:7%"><col style="width:19%"><col style="width:23%"></colgroup><tr><th>Tool</th><th>Code</th><th>Versie</th><th>Soort</th><th>Status</th><th>Handleiding</th><th>Nieuwe versie</th></tr>' + toolVolgorde().map((t, _i, L) => { const H = L.filter(x => !(x.instellingen && x.instellingen.onder)); const og = t.instellingen && t.instellingen.onder; return `<tr class="${og ? 'tb-sub' : ''}" data-tgroep="${esc(og || t.code)}"${og ? '' : ` data-thoofd="${esc(t.code)}"`}>
-    <td><div class="tb-naam">${t.instellingen && t.instellingen.onder ? '<span class="tb-hang" title="hangt altijd onder ' + esc((ALLETOOLS.find(x => x.code === t.instellingen.onder) || {}).naam || '') + '">↳</span>' : ''}<b${t.instellingen && t.instellingen.onder ? '' : ` class="tb-sleep" data-tsleep="${esc(t.code)}" title="ingedrukt houden en slepen om de volgorde te wijzigen"`}>${esc(t.naam)}</b></div><div class="klein tb-oms" title="${esc(t.omschrijving || '')}">${esc(t.omschrijving || '')}</div></td><td class="klein">${esc(t.code)}</td><td>${esc(t.versie || '–')}</td>
-    <td class="klein">${t.instellingen && t.instellingen.onder ? 'eerste tegel onder ' + esc((ALLETOOLS.find(x => x.code === t.instellingen.onder) || {}).naam || t.instellingen.onder) : t.instellingen && t.instellingen.klantloos ? 'zonder klant' : 'per klant<div style="margin-top:4px"><button class="knop klein" data-tteam="' + esc(t.code) + '" title="Mogen teamleden zelf nieuwe dataversies uploaden voor bestaande klanten?">' + (t.instellingen && t.instellingen.teamUpload ? '● team uploadt' : '○ beheerder uploadt') + '</button></div>'}</td>
+  $('tooltabel').innerHTML = '<colgroup><col style="width:26%"><col style="width:7%"><col style="width:8%"><col style="width:27%"><col style="width:32%"></colgroup><tr><th>Tool</th><th>Versie</th><th>Status</th><th>Handleiding</th><th>Nieuwe versie</th></tr>' + toolVolgorde().map((t, _i, L) => { const H = L.filter(x => !(x.instellingen && x.instellingen.onder)); const og = t.instellingen && t.instellingen.onder; return `<tr class="${og ? 'tb-sub' : ''}" data-tgroep="${esc(og || t.code)}"${og ? '' : ` data-thoofd="${esc(t.code)}"`}>
+    <td><div class="tb-naam">${t.instellingen && t.instellingen.onder ? '<span class="tb-hang" title="hangt altijd onder ' + esc((ALLETOOLS.find(x => x.code === t.instellingen.onder) || {}).naam || '') + '">↳</span>' : ''}<b${t.instellingen && t.instellingen.onder ? '' : ` class="tb-sleep" data-tsleep="${esc(t.code)}" title="ingedrukt houden en slepen om de volgorde te wijzigen"`}>${esc(t.naam)}</b></div><div class="klein tb-oms" title="${esc(t.omschrijving || '')}">${esc(t.omschrijving || '')}</div></td><td>${esc(t.versie || '–')}</td>
     <td><button class="knop klein" data-tactief="${esc(t.code)}">${t.actief ? '● aan' : '○ uit'}</button></td>
-    <td><div class="tb-hl">${hlLijst(t).map((h, i) => `<span class="r"><a data-hlopen="${esc(t.code)}|${i}" title="${esc(h.naam)} · ${esc(new Date(h.datum).toLocaleDateString('nl-NL', {day: 'numeric', month: 'short', year: 'numeric'}))} — klik = openen · dubbelklik = naam wijzigen">📄 ${esc(h.naam)}</a><span class="x" data-hlweg="${esc(t.code)}|${i}" title="verwijderen">✕</span></span>`).join('')}
-      <label class="knop klein" style="align-self:flex-start;cursor:pointer" title="PDF uploaden. Zelfde naam als een bestaande handleiding = die wordt vervangen door de nieuwe versie.">＋ PDF<input type="file" accept="application/pdf,.pdf" data-hlnieuw="${esc(t.code)}" hidden></label></div></td>
+    <td><div class="tb-hl">${(() => { const L = hlLijst(t), pdf = `<label class="knop klein tb-pdf" title="PDF uploaden. Zelfde naam als een bestaande handleiding = die wordt vervangen door de nieuwe versie.">＋ PDF<input type="file" accept="application/pdf,.pdf" data-hlnieuw="${esc(t.code)}" hidden></label>`;
+      return L.length ? L.map((h, i) => `<span class="r"><a data-hlopen="${esc(t.code)}|${i}" title="${esc(h.naam)} · ${esc(new Date(h.datum).toLocaleDateString('nl-NL', {day: 'numeric', month: 'short', year: 'numeric'}))} — klik = openen · dubbelklik = naam wijzigen">📄 ${esc(h.naam)}</a><span class="x" data-hlweg="${esc(t.code)}|${i}" title="verwijderen">✕</span>${i === L.length - 1 ? pdf : ''}</span>`).join('') : pdf; })()}</div></td>
     <td>${(t.app_pad || '').split('/')[0] !== t.code && ALLETOOLS.find(x => x.code === (t.app_pad || '').split('/')[0]) ? `<div class="klein" style="margin-bottom:4px">gebruikt nu de app van <b>${esc(ALLETOOLS.find(x => x.code === t.app_pad.split('/')[0]).naam)}</b> — een eigen upload maakt hem los</div>` : ''}<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><label class="knop klein tb-kies" title="HTML-bestand van de nieuwe versie kiezen"><input type="file" accept=".html,text/html" data-tbestand="${esc(t.code)}" hidden><span>Kies bestand</span></label>
       <input data-tversie="${esc(t.code)}" placeholder="versie" style="width:56px;flex:none;padding:5px 7px;border:1px solid var(--hair2);border-radius:7px;background:var(--paper);color:var(--ink)">
       <button class="knop klein prim" data-tupload="${esc(t.code)}">Uploaden</button></div></td></tr>`; }).join('');

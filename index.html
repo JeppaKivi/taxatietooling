@@ -325,6 +325,20 @@ th{font:800 9.5px var(--body);text-transform:uppercase;letter-spacing:.8px;color
 .tegel.ts.binnenkort{cursor:default;opacity:.6}
 .tegel.ts.binnenkort:hover{border-color:transparent;transform:none}
 .tegel.ts.vergelijk:before{content:none}
+/* klanttegels in de kleuren van de gekozen tool (variabelen --a-l e.d. staan op #klanten, gezet in renderKlanten) */
+#klanten .tegel:not(.ts){--acc:var(--a-l,#4A7FB5);--acc-deep:var(--lab-l,#2E5C8A);background:#FFFFFF;color:#1C2733;border:1px solid transparent;border-radius:16px;box-shadow:0 1px 2px rgba(16,40,70,.08),0 6px 18px rgba(16,40,70,.08);position:relative}
+#klanten .tegel:not(.ts):not(.nieuw):before{content:"";position:absolute;left:0;top:14px;bottom:14px;width:3px;border-radius:0 3px 3px 0;background:var(--a-l)}
+#klanten .tegel:not(.ts):hover{border-color:var(--acc)}
+#klanten .tegel:not(.ts) .t{color:var(--ink)}
+#klanten .tegel.nieuw:not(.invoer){background:transparent;box-shadow:none;border:1.5px dashed var(--a-l);color:var(--lab-l)}
+#klanten .tegel.nieuw.invoer{border-color:var(--a-l)}
+:root[data-theme="dark"] #klanten .tegel:not(.ts){--card:#154473;--ink:#FFFFFF;--ink-soft:#C9D6E6;--paper:#0F3A66;--paper-dim:rgba(255,255,255,.10);--hairline:rgba(255,255,255,.18);--hair2:rgba(255,255,255,.3);--acc:var(--a-d,#6FA7DD);--acc-deep:var(--lab-d,#9CC1F2);--ok:#7FD3A0;--bad:#F28B7F;--warn:#F2B866;background:#154473;color:#FFFFFF;box-shadow:0 6px 18px rgba(0,0,0,.35)}
+:root[data-theme="dark"] #klanten .tegel:not(.ts):not(.nieuw):before{background:var(--a-d)}
+:root[data-theme="dark"] #klanten .tegel.nieuw:not(.invoer){background:transparent;box-shadow:none;border-color:var(--a-d);color:var(--lab-d)}
+@media (prefers-color-scheme: dark){
+:root:not([data-theme="light"]) #klanten .tegel:not(.ts){--card:#154473;--ink:#FFFFFF;--ink-soft:#C9D6E6;--paper:#0F3A66;--paper-dim:rgba(255,255,255,.10);--hairline:rgba(255,255,255,.18);--hair2:rgba(255,255,255,.3);--acc:var(--a-d,#6FA7DD);--acc-deep:var(--lab-d,#9CC1F2);--ok:#7FD3A0;--bad:#F28B7F;--warn:#F2B866;background:#154473;color:#FFFFFF;box-shadow:0 6px 18px rgba(0,0,0,.35)}
+:root:not([data-theme="light"]) #klanten .tegel:not(.ts):not(.nieuw):before{background:var(--a-d)}
+:root:not([data-theme="light"]) #klanten .tegel.nieuw:not(.invoer){background:transparent;box-shadow:none;border-color:var(--a-d);color:var(--lab-d)} }
 .balk{display:flex;height:8px;border-radius:99px;overflow:hidden;background:var(--paper-dim);margin-top:4px}
 .balk i:nth-child(1){background:var(--ok)} .balk i:nth-child(2){background:var(--bad)}
 .tabpaneel{padding:0 16px 16px}
@@ -741,6 +755,7 @@ function klantRegel(d, live){
 }
 function renderKlanten(code){
   const tool = TOOLS.find(t => t.code === code); if (!tool) return;
+  { const s = TS_STIJL[code] || TS_STIJL._; $('klanten').style.cssText = `--a-l:${s.al};--a-d:${s.ad};--s-l:${s.s};--lab-l:${s.ll};--lab-d:${s.ld};--c-l:${s.c}`; }
   $('klantblok').classList.remove('verborgen'); $('klantkop').textContent = tool.naam + ' · kies een klant';
   const laatste = {}; for (const d of DATASETS) if (d.tool_code === code && !laatste[d.klant_code]) laatste[d.klant_code] = d;
   const ADM = EFF().admin, lijst = KLANTEN.filter(k => laatste[k.code]);  // alleen klanten met data voor deze tool (ook voor de beheerder)

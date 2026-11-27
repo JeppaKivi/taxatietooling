@@ -362,6 +362,7 @@ th{font:800 9.5px var(--body);text-transform:uppercase;letter-spacing:.8px;color
 .bogt .bg-s .as{height:56px;width:100%;display:flex;align-items:flex-end;border-bottom:1px solid var(--hair2,#C9D3DE)}
 .bogt .bg-s .as i{display:block;width:100%;border-radius:3px 3px 0 0}
 .bogt .bg-leeg{margin:12px 0}
+#bogverd{margin-left:auto;border-radius:99px}
 .bogt .bg-strook{display:flex;height:26px;margin:auto -18px 0;width:calc(100% + 36px);font:700 11px var(--body)}
 .bogt .bg-strook i{display:flex;align-items:center;justify-content:center;font-style:normal;min-width:26px}
 /* klanttegels in de kleuren van de gekozen tool (variabelen --a-l e.d. staan op #klanten, gezet in renderKlanten) */
@@ -425,7 +426,7 @@ th{font:800 9.5px var(--body);text-transform:uppercase;letter-spacing:.8px;color
     <i class="pgr l" data-pgr="l" title="sleep om de paginabreedte aan te passen"></i><i class="pgr r" data-pgr="r" title="sleep om de paginabreedte aan te passen"></i>
     <div class="blokken" id="blokken">
       <section class="blok" data-blok="tools"><div class="tegels" id="tools"></div></section>
-      <section class="blok verborgen" data-blok="klanten" id="klantblok"><header><h2 id="klantkop">Klanten</h2></header>
+      <section class="blok verborgen" data-blok="klanten" id="klantblok"><header><h2 id="klantkop">Klanten</h2><button class="knop klein verborgen" id="bogverd" title="staafjes op de tegels: verdeling per vastgoedtype naar aantal eenheden of naar m² VVO"></button></header>
         <div class="tegels" id="klanten"></div></section>
     </div>
     <section class="beheer verborgen" id="beheerblok"><header class="sectiekop" id="beheerkop" title="klik om in of uit te klappen"><h2><span class="bh-pijl">▾</span> Beheer</h2><span class="klein">alleen zichtbaar voor de beheerder</span></header>
@@ -800,13 +801,15 @@ function klantRegel(d, live){
 }
 /* klanttegel Markthuur BOG MOG ZOG (ontwerp D2, 27-11-2026): naam + datum, complexen · eenheden op één regel,
    staafjes eenheden per vastgoedtype (vaste volgorde), onderrand = oordeel (binnen / aandacht / buiten / voorzet) */
+const bogVerd = () => { try { return localStorage.getItem('tt_bogverd') === 'm2' ? 'm2' : 'vhe'; } catch(e){ return 'vhe'; } };
 const BOG_TYP = [['Kantoren', 'Kant.', '--tk1'], ['Winkels', 'Wink.', '--tk2'], ['Zorg', 'Zorg', '--tk3'], ['Maatschappelijk', 'MOG', '--tk4'], ['Bedrijfsmatig', 'Bedr.', '--tk5']];
 function bogTegel(k, d, kz, tool, ADM){
   const m = (d && d.meta) || {}, t = m.tel || null, n = t ? t.n : m.complexen, v = t ? t.vhe : m.vhe;
   const info = [d ? 'gepubliceerd ' + tijd(d.op) : '', d && d.snapshot ? d.snapshot : '', kz && kz.n ? kz.n + ' aanpassing' + (kz.n === 1 ? '' : 'en') + ' · laatst ' + tijd(kz.op) : '', tellingVersie(d) && tellingVersie(d) !== appVersie(tool) ? 'telling op de tegel berekend met v' + tellingVersie(d) + ', wordt bijgewerkt bij de volgende keer openen' : ''].filter(Boolean).join('\n');
-  const T = t && t.typ, tot = T ? Object.values(T).reduce((a, b) => a + b, 0) : 0, mx = T ? Math.max(1, ...Object.values(T)) : 1;
+  const opM2 = bogVerd() === 'm2' && t && t.typM2, T = t && (opM2 ? t.typM2 : t.typ), eh = opM2 ? 'm² VVO' : 'eenheden';
+  const tot = T ? Object.values(T).reduce((a, b) => a + b, 0) : 0, mx = T ? Math.max(1, ...Object.values(T)) : 1;
   const staven = T && tot ? `<span class="bg-st">${BOG_TYP.map(([ty, kort, kl]) => { const x = T[ty] || 0;
-      return `<span class="bg-s" title="${esc(ty)}: ${nl(x)} eenheden"><small>${x ? Math.round(x / tot * 100) + '%' : '–'}</small><span class="as"><i style="height:${x ? Math.max(3, Math.round(x / mx * 56)) : 0}px;background:var(${kl})"></i></span><em>${kort}</em></span>`; }).join('')}</span>`
+      return `<span class="bg-s" title="${esc(ty)}: ${nl(x)} ${eh}"><small>${x ? Math.round(x / tot * 100) + '%' : '–'}</small><span class="as"><i style="height:${x ? Math.max(3, Math.round(x / mx * 56)) : 0}px;background:var(${kl})"></i></span><em>${kort}</em></span>`; }).join('')}</span>`
     : `<span class="o klein bg-leeg"><i>${d ? 'typen en oordeel verschijnen na de eerstvolgende keer openen' : 'nog geen data gepubliceerd'}</i></span>`;
   const del = t ? [['ok', 'var(--ok)', 'binnen marge', 'var(--sk)'], ['warn', 'var(--warn)', 'aandacht', 'var(--sk)'], ['bad', 'var(--bad)', 'buiten marge', 'var(--sk)'], ['vz', 'var(--vz,#9EB2CC)', 'voorzet', '#14304F']].filter(x => t[x[0]] > 0) : [];
   const strook = del.length ? `<span class="bg-strook">${del.map(([kk, kl, nm, tk]) => `<i style="flex:${t[kk]} 1 0;background:${kl};color:${tk}" title="${nl(t[kk])} ${nm}">${nl(t[kk])}</i>`).join('')}</span>` : '';
@@ -821,6 +824,8 @@ function renderKlanten(code){
   const tool = TOOLS.find(t => t.code === code); if (!tool) return;
   { const s = TS_STIJL[code] || TS_STIJL._; $('klanten').style.cssText = `--a-l:${s.al};--a-d:${s.ad};--s-l:${s.s};--lab-l:${s.ll};--lab-d:${s.ld};--c-l:${s.c}`; }
   $('klantblok').classList.remove('verborgen'); $('klantkop').textContent = tool.naam + ' · kies een klant';
+  { const vb = $('bogverd'); vb.classList.toggle('verborgen', code !== 'bog_mog_zog'); vb.textContent = 'Verdeling: ' + (bogVerd() === 'm2' ? 'm²' : 'eenheden');
+    vb.onclick = () => { try { localStorage.setItem('tt_bogverd', bogVerd() === 'm2' ? 'vhe' : 'm2'); } catch(e){} renderKlanten(code); }; }
   const laatste = {}; for (const d of DATASETS) if (d.tool_code === code && !laatste[d.klant_code]) laatste[d.klant_code] = d;
   const ADM = EFF().admin, lijst = KLANTEN.filter(k => laatste[k.code]);  // alleen klanten met data voor deze tool (ook voor de beheerder)
   const subs = TOOLS.filter(t => t.instellingen && t.instellingen.onder === code);   /* bv. Vergelijk portefeuilles: altijd de eerste tegel */

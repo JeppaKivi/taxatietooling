@@ -364,6 +364,19 @@ th{font:800 9.5px var(--body);text-transform:uppercase;letter-spacing:.8px;color
 .bogt .bg-s .as i{display:block;width:100%;border-radius:3px 3px 0 0}
 .bogt .bg-leeg{margin:12px 0}
 #bogverd{margin-left:4px;border-radius:99px}
+#mfbegrepen{margin-left:4px;border-radius:99px;border-color:var(--acc);color:var(--acc-deep);font-weight:650}
+/* patchnote nieuwe formule: overzicht per klant, in het hoofdmenu zelf */
+#mfn{position:fixed;inset:0;z-index:900;display:flex;align-items:center;justify-content:center;background:rgba(10,18,28,.55);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px)}
+#mfn .mk{background:var(--card);color:var(--ink);border:1px solid var(--hairline);border-radius:16px;box-shadow:0 18px 60px rgba(0,0,0,.35);width:min(940px,94vw);max-height:90vh;display:flex;flex-direction:column;overflow:hidden}
+#mfn .kop{background:#154473;color:#fff;padding:18px 24px 16px}#mfn .kop small{display:block;font-size:11px;letter-spacing:.08em;text-transform:uppercase;opacity:.75;margin-bottom:5px}#mfn .kop h2{font:650 19px var(--display);margin:0 0 5px;line-height:1.25;color:#fff}#mfn .kop p{font-size:12px;opacity:.85;margin:0}
+#mfn .in{padding:18px 24px;overflow:auto}#mfn .kpi{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px}
+#mfn .kpi div{background:var(--paper-dim);border:1px solid var(--hairline);border-radius:10px;padding:10px 12px}#mfn .kpi span{display:block;font-size:10.5px;color:var(--ink-soft);margin-bottom:4px}#mfn .kpi b{font-size:19px;font-weight:650}#mfn .kpi i{font-style:normal;font-size:11px;color:var(--ink-soft);display:block;margin-top:2px}
+#mfn h3{font-size:12.5px;margin:0 0 6px}#mfn .uitleg{font-size:12px;line-height:1.6;background:var(--paper-dim);border-left:3px solid var(--acc);border-radius:0 8px 8px 0;padding:9px 12px;margin-bottom:16px}
+#mfn .twee{display:grid;grid-template-columns:1fr 1fr;gap:16px}#mfn table{width:100%;border-collapse:collapse;font-size:11.5px}#mfn th{text-align:left;font-weight:600;color:var(--ink-soft);font-size:10.5px;padding:3px 6px 5px 0;border-bottom:1px solid var(--hairline)}
+#mfn td{padding:4px 6px 4px 0;border-bottom:1px solid var(--hairline);vertical-align:top}#mfn td.r,#mfn th.r{text-align:right;white-space:nowrap}#mfn td small{color:var(--ink-soft)}#mfn .leeg{font-size:12px;color:var(--ink-soft);padding:6px 0}
+#mfn .lijst{max-height:270px;overflow:auto}#mfn .vt{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 24px;border-top:1px solid var(--hairline);font-size:11px;color:var(--ink-soft)}
+#mfn .vt button{background:#154473;color:#fff;border:0;border-radius:99px;padding:8px 20px;font:600 12.5px var(--body);cursor:pointer}#mfn .vt button.licht{background:transparent;color:var(--ink);border:1px solid var(--hair2);margin-right:8px}
+@media(max-width:760px){#mfn .kpi{grid-template-columns:1fr 1fr}#mfn .twee{grid-template-columns:1fr}}
 .bogt .bg-strook{display:flex;height:26px;margin:auto -18px 0;width:calc(100% + 36px);font:700 11px var(--body)}
 .bogt .bg-strook i{display:flex;align-items:center;justify-content:center;font-style:normal;min-width:26px}
 /* klanttegels in de kleuren van de gekozen tool (variabelen --a-l e.d. staan op #klanten, gezet in renderKlanten) */
@@ -427,7 +440,7 @@ th{font:800 9.5px var(--body);text-transform:uppercase;letter-spacing:.8px;color
     <i class="pgr l" data-pgr="l" title="sleep om de paginabreedte aan te passen"></i><i class="pgr r" data-pgr="r" title="sleep om de paginabreedte aan te passen"></i>
     <div class="blokken" id="blokken">
       <section class="blok" data-blok="tools"><div class="tegels" id="tools"></div></section>
-      <section class="blok verborgen" data-blok="klanten" id="klantblok"><header><h2 id="klantkop">Klanten</h2><button class="knop klein verborgen" id="bogverd" title="staafjes op de tegels: verdeling per vastgoedtype naar aantal eenheden of naar m² VVO"></button></header>
+      <section class="blok verborgen" data-blok="klanten" id="klantblok"><header><h2 id="klantkop">Klanten</h2><button class="knop klein verborgen" id="mfbegrepen" title="Haalt de melding over de nieuwe modelmatige formule van alle klanttegels (alleen voor jou). De patchnote blijft op elke tegel staan.">Nieuwe modelmatige formule: ik begrijp het</button><button class="knop klein verborgen" id="bogverd" title="staafjes op de tegels: verdeling per vastgoedtype naar aantal eenheden of naar m² VVO"></button></header>
         <div class="tegels" id="klanten"></div></section>
     </div>
     <section class="beheer verborgen" id="beheerblok"><header class="sectiekop" id="beheerkop" title="klik om in of uit te klappen"><h2><span class="bh-pijl">▾</span> Beheer</h2><span class="klein">alleen zichtbaar voor de beheerder</span></header>
@@ -692,9 +705,10 @@ function miniGrafiek(code){
 /* regel onder de klantnaam: bij een tool die tellingen meegeeft (controle marktwaarde) kort de nieuwste versie met goed / aandacht */
 /* ---------- leidende formule per klant (Controletool wonen) en tegeltellingen zonder de tool te openen ----------
    MFH = alle ooit doorgevoerde formules (nieuwste eerst); MFK[klant] = vastgezette versie (tool_instellingen.cfg.mfVersie), anders de nieuwste. */
-let MFH = [], MFK = {}, TICFG = {};
+let MFH = [], MFK = {}, TICFG = {}, MFG = {};
 async function laadMf(){
-  try{ const [h, ti] = await Promise.all([sb.rpc('mf_historie'), sb.from('tool_instellingen').select('klant_code, cfg').eq('tool_code', 'controle_marktwaarde')]);
+  try{ const [h, ti, gz] = await Promise.all([sb.rpc('mf_historie'), sb.from('tool_instellingen').select('klant_code, cfg').eq('tool_code', 'controle_marktwaarde'), sb.from('mf_gezien').select('klant_code, versie')]);
+    MFG = {}; for (const r of (gz && gz.data) || []) MFG[r.klant_code] = +r.versie;
     MFH = (Array.isArray(h.data) ? h.data : []).slice().sort((a, b) => b.versie - a.versie); TICFG = {}; MFK = {};
     for (const r of ti.data || []){ TICFG[r.klant_code] = r.cfg || {}; if (r.cfg && r.cfg.mfVersie != null && isFinite(+r.cfg.mfVersie)) MFK[r.klant_code] = +r.cfg.mfVersie; }
   }catch(e){ console.warn('formules laden', e); }
@@ -702,8 +716,15 @@ async function laadMf(){
 const mfVoor = k => (MFK[k] != null && MFH.find(v => v.versie === MFK[k])) || MFH[0] || null;
 const mfKort = v => v ? 'v' + v.versie + (v.naam ? ' · ' + v.naam : '') : '';
 /* welke formule heeft deze gebruiker voor deze klant al gezien (bij het openen van de tool); eerste keer = de huidige, zonder melding */
-const mfGezien = k => { try{ const v = localStorage.getItem('tt_mfgezien_' + k); return v == null ? null : +v; }catch(e){ return null; } };
-const mfZetGezien = (k, v) => { try{ localStorage.setItem('tt_mfgezien_' + k, String(v)); }catch(e){} };
+/* nov 2026: per gebruiker in de database (tabel mf_gezien), niet meer per browser: de melding blijft staan tot deze gebruiker zelf de klant opent
+   of op 'ik begrijp het' klikt, wat een ander ook al gedaan heeft. Nog niets vastgelegd = de vorige formule gezien (dus melding). */
+const mfGezien = k => MFG[k] != null ? MFG[k] : null;
+const mfVorige = v => { const o = MFH.filter(x => x.versie < v.versie).sort((a, b) => b.versie - a.versie)[0]; return o ? o.versie : v.versie; };
+async function mfZetGezien(k, v){ if (MFG[k] === v) return; MFG[k] = v;
+  try{ const {error} = await sb.from('mf_gezien').upsert({klant_code: k, versie: v, op: new Date().toISOString()}, {onConflict: 'user_id,klant_code'}); if (error) console.warn('formule gezien', error.message); }catch(e){ console.warn('formule gezien', e); } }
+async function mfAllesGezien(code){ const rows = []; for (const k of KLANTEN_ALLE){ const va = mfVoor(k.code); if (!va || k.code === 'algemeen' || MFG[k.code] === va.versie) continue; MFG[k.code] = va.versie; rows.push({klant_code: k.code, versie: va.versie, op: new Date().toISOString()}); }
+  if (rows.length) try{ const {error} = await sb.from('mf_gezien').upsert(rows, {onConflict: 'user_id,klant_code'}); if (error) console.warn('formule gezien', error.message); }catch(e){ console.warn('formule gezien', e); }
+  renderKlanten(code); }
 /* goed / aandacht van de nieuwste versie in het pakket, met de rekenkern en de formule van die klant (zelfde regels als de Controletool) */
 const PKC = {}, TELC = {};
 const hashTxt = t => { let h = 5381; for (let i = 0; i < t.length; i++) h = ((h << 5) + h + t.charCodeAt(i)) | 0; return (h >>> 0).toString(36); };
@@ -730,16 +751,54 @@ async function ctTel(d, v){
     TELC[sl] = t; try{ localStorage.setItem('tt_tel_' + sl, JSON.stringify(t)); }catch(e){} return t;
   }catch(e){ console.warn('tegeltelling', d.klant_code, e); return null; }
 }
+/* patchnote op de klanttegel: wat betekent de formule die nu geldt voor deze klant, vergeleken met de vorige. Zelfde rekenwijze als de tegel
+   (nieuwste versie in het pakket, marktwaarde excl. correcties). Bekijken haalt de melding niet weg. */
+async function mfPatchnote(tool, k){
+  const K = window.TTKERN, d = DATASETS.find(x => x.tool_code === 'controle_marktwaarde' && x.klant_code === k), nu = mfVoor(k), klant = KLANTEN_ALLE.find(x => x.code === k);
+  if (!K || !d || !nu) return; const vorig = MFH.filter(x => x.versie < nu.versie).sort((a, b) => b.versie - a.versie)[0]; if (!vorig) return;
+  let m = $('mfn'); if (!m){ m = document.createElement('div'); m.id = 'mfn'; document.body.appendChild(m); }
+  const sluit = () => m.remove(); m.onclick = ev => { if (ev.target === m) sluit(); };
+  m.innerHTML = '<div class="mk"><div class="kop"><small>Nieuwe modelmatige formule</small><h2>Wat betekent dit voor ' + esc(klant ? klant.naam : k) + '?</h2><p>bezig met rekenen…</p></div></div>';
+  try{
+    const P = await ctPakket(d), tc = TICFG[k] && TICFG[k].toetsCfg, T = K.tcfgVan(tc), cN = K.vulAan(nu.cfg), cO = K.vulAan(vorig.cfg);
+    const kop = c => { const x = Object.assign({}, c); if (c.inp && typeof c.inp === 'object') x.inp = Object.assign({}, c.inp); if (c.rk) x.rk = Object.assign({}, c.rk); if (c.o2) x.o2 = Object.assign({}, c.o2); delete x._inp;
+      if (x.lwmin0 !== undefined){ x.lwmin = x.lwmin0; x.lwmax = x.lwmax0; delete x.lwmin0; delete x.lwmax0; } if (x.wws === undefined && P.wws.has(String(x.id))) x.wws = P.wws.get(String(x.id)); return x; };
+    const aan = x => { try{ const a = K.isAandacht(x, T, false); return !!(a && a.aan); }catch(e){ return false; } };
+    const reden = x => { try{ const s = K.aandachtScore(x, x.o2 || {}, T); return [...new Set(((s && s.det) || []).filter(q => q[1] >= 10).map(q => /LWR|leegwaarde/i.test(q[0]) ? 'leegwaarderatio' : /KF/i.test(q[0]) ? 'KF' : q[0]))].join(' + '); }catch(e){ return ''; } };
+    const R = {n: 0, ntg: 0, aO: 0, aN: 0, vO: 0, vN: 0, eraf: [], erbij: [], som: 0, m: 0, op: 0, neer: 0};
+    for (const c of P.rows){ const o = kop(c), w = kop(c); try{ K.herreken(o, cO, T); K.herreken(w, cN, T); }catch(e){ continue; }
+      R.n++; if (!(w.mf > 1)){ R.ntg++; continue; } const ao = o.mf > 1 && aan(o), an = aan(w), vhe = +c.vhe || 0;
+      if (ao){ R.aO++; R.vO += vhe; } if (an){ R.aN++; R.vN += vhe; }
+      if (o.mf > 1){ const dd = w.mf / o.mf - 1; R.som += dd; R.m++; if (dd > .0005) R.op++; else if (dd < -.0005) R.neer++; }
+      const rij = {id: c.id, naam: c.naam && c.naam !== c.id ? c.naam : '', pl: c.plaats || '', vhe, mO: o.mf, mN: w.mf, kf: c.kf, rd: reden(an ? w : o), was: !an};
+      if (ao && !an) R.eraf.push(rij); else if (!ao && an) R.erbij.push(rij); }
+    R.eraf.sort((a, b) => b.vhe - a.vhe); R.erbij.sort((a, b) => b.vhe - a.vhe);
+    const g1 = v => v == null || !isFinite(v) ? '—' : nl(v, 1), pr = v => (v > 0 ? '+' : '') + nl(v * 100, 1) + '%', dt = o => o ? new Date(o).toLocaleDateString('nl-NL', {day: 'numeric', month: 'long', year: 'numeric'}) : '';
+    const tabel = L => !L.length ? '<div class="leeg">Geen complexen.</div>' : '<div class="lijst"><table><tr><th>complex</th><th class="r">VHE</th><th class="r">MF oud → nieuw</th><th class="r">KF</th></tr>'
+      + L.map(x => '<tr><td><b>' + esc(x.id) + '</b>' + (x.naam ? ' ' + esc(x.naam) : '') + (x.pl || x.rd ? '<br><small>' + esc([x.pl, x.rd ? (x.was ? 'was buiten de marge op: ' : 'buiten de marge op: ') + x.rd : ''].filter(Boolean).join(' · ')) + '</small>' : '') + '</td><td class="r">' + nl(x.vhe) + '</td><td class="r">' + g1(x.mO) + ' → <b>' + g1(x.mN) + '</b></td><td class="r">' + g1(x.kf) + '</td></tr>').join('') + '</table></div>';
+    if (!document.body.contains(m)) return;
+    m.innerHTML = '<div class="mk"><div class="kop"><small>Nieuwe modelmatige formule</small><h2>Wat betekent dit voor ' + esc(klant ? klant.naam : k) + '?</h2><p>' + esc(nu.naam || ('v' + nu.versie)) + (nu.op ? ' · sinds ' + dt(nu.op) : '') + ' · vervangt ' + esc(vorig.naam || ('v' + vorig.versie)) + '</p></div>'
+      + '<div class="in"><div class="kpi"><div><span>Aandachtscomplexen</span><b>' + R.aO + ' → ' + R.aN + '</b><i>van ' + (R.n - R.ntg) + ' getoetste complexen</i></div>'
+      + '<div><span>Woningen in aandacht</span><b>' + nl(R.vO) + ' → ' + nl(R.vN) + '</b><i>VHE</i></div>'
+      + '<div><span>Geen aandacht meer · nieuw</span><b>' + R.eraf.length + ' · ' + R.erbij.length + '</b><i>complexen</i></div>'
+      + '<div><span>Modelmatige factor gemiddeld</span><b>' + pr(R.m ? R.som / R.m : 0) + '</b><i>' + R.op + ' hoger · ' + R.neer + ' lager</i></div></div>'
+      + (nu.notitie ? '<h3>Wat is er veranderd</h3><div class="uitleg">' + esc(nu.notitie) + '</div>' : '')
+      + '<div class="twee"><div><h3>Geen aandachtscomplex meer (' + R.eraf.length + ')</h3>' + tabel(R.eraf) + '</div><div><h3>Nieuwe aandachtscomplexen (' + R.erbij.length + ')</h3>' + tabel(R.erbij) + '</div></div></div>'
+      + '<div class="vt"><span>Berekend op de nieuwste versie van deze klant (' + esc(P.versie || '') + '), marktwaarde exclusief correcties.</span><span><button class="licht" id="mfn-open">Klant openen</button><button id="mfn-x">Sluiten</button></span></div></div>';
+    $('mfn-x').onclick = sluit; $('mfn-open').onclick = () => { sluit(); openTool(tool, k); };
+  }catch(e){ console.warn('patchnote', e); m.innerHTML = '<div class="mk"><div class="kop"><small>Nieuwe modelmatige formule</small><h2>Het overzicht kon niet worden berekend</h2><p>' + esc((e && e.message) || e) + '</p></div><div class="vt"><span></span><button id="mfn-x">Sluiten</button></div></div>'; $('mfn-x').onclick = sluit; }
+}
 /* klanttegels van de Controletool wonen live bijwerken; melding bij een nieuwe (of andere) formule tot deze gebruiker de klant opent */
 async function verversCtTegels(code){
   if (code !== 'controle_marktwaarde' || !MFH.length) return;
   for (const el of document.querySelectorAll('#klanten [data-kr]')){
     const k = el.dataset.kr, d = DATASETS.find(x => x.tool_code === code && x.klant_code === k); if (!d) continue;
     const va = mfVoor(k); if (!va) continue;
-    let gz = mfGezien(k); if (gz == null || !MFH.some(v => v.versie === gz)){ mfZetGezien(k, va.versie); gz = va.versie; }
+    let gz = mfGezien(k); if (gz == null || !MFH.some(v => v.versie === gz)) gz = mfVorige(va);
     const t = await ctTel(d, va); if (!t) continue;
     const oud = gz !== va.versie ? await ctTel(d, MFH.find(v => v.versie === gz)) : null;
     if (!document.body.contains(el)) return;
+    if (oud){ const kb = $('mfbegrepen'); if (kb) kb.classList.remove('verborgen'); }
     el.innerHTML = klantRegel(d, {tel: t, oud, va, gz: MFH.find(v => v.versie === gz), vast: MFK[k] != null});
   }
   lijnUit();
@@ -753,7 +812,7 @@ function tellingVersie(d){ const t = d && d.meta && d.meta.tel || {}, v = d && d
 function klantRegel(d, live){
   if (!d) return '<span class="o"><i>nog geen data gepubliceerd</i></span>';
   const m = d.meta || {}, t = live && live.tel || m.tel;
-  const meld = live && live.oud ? `<span class="mfmeld" title="${esc(live.va.notitie || '')}"><b>Let op: ${live.va.versie > live.gz.versie ? 'nieuwe' : 'andere'} modelmatige formule van toepassing</b> (${esc(mfKort(live.va))}${live.vast ? ', vastgezet voor deze klant' : ''})<br>goed ${nl(live.oud.goed)} → <b>${nl(t.goed)}</b> · aandacht ${nl(live.oud.aand)} → <b>${nl(t.aand)}</b>${live.oud.ntg !== t.ntg ? ` · niet getoetst ${nl(live.oud.ntg)} → ${nl(t.ntg)}` : ''}<span class="klein"> · verdwijnt als je de klant opent</span></span>` : '';
+  const meld = live && live.oud ? `<span class="mfmeld" title="${esc(live.va.notitie || '')}"><b>Let op: ${live.va.versie > live.gz.versie ? 'nieuwe' : 'andere'} modelmatige formule van toepassing</b> (${esc(mfKort(live.va))}${live.vast ? ', vastgezet voor deze klant' : ''})<br>goed ${nl(live.oud.goed)} → <b>${nl(t.goed)}</b> · aandacht ${nl(live.oud.aand)} → <b>${nl(t.aand)}</b>${live.oud.ntg !== t.ntg ? ` · niet getoetst ${nl(live.oud.ntg)} → ${nl(t.ntg)}` : ''}<span class="klein"> · verdwijnt als je de klant opent of op ‘ik begrijp het’ klikt</span></span>` : '';
   if (t && t.goed != null) return meld + `<span class="o kkop">${esc(t.versie || m.versie || '')}${t.n ? ' · ' + nl(t.n) + ' complexen' : ''}${live && live.va && (live.vast || MFH.length > 1) ? ' · formule v' + live.va.versie : ''}</span>
     <span class="balk"><i style="width:${(t.goed / Math.max(1, t.goed + t.aand) * 100).toFixed(1)}%"></i><i style="width:${(t.aand / Math.max(1, t.goed + t.aand) * 100).toFixed(1)}%"></i></span>
     <span class="tel"><span class="g"><b>${nl(t.goed)}</b>goed</span><span class="a"><b>${nl(t.aand)}</b>aandacht</span>${t.ntg ? `<span class="n" title="geen modelmatige factor (bijv. studenteneenheden) — niet getoetst"><b>${nl(t.ntg)}</b>niet getoetst</span>` : ''}</span>`;
@@ -825,6 +884,7 @@ function renderKlanten(code){
   const tool = TOOLS.find(t => t.code === code); if (!tool) return;
   { const s = TS_STIJL[code] || TS_STIJL._; $('klanten').style.cssText = `--a-l:${s.al};--a-d:${s.ad};--s-l:${s.s};--lab-l:${s.ll};--lab-d:${s.ld};--c-l:${s.c}`; }
   $('klantblok').classList.remove('verborgen'); $('klantkop').textContent = tool.naam + ' · kies een klant';
+  { const kb = $('mfbegrepen'); kb.classList.add('verborgen'); kb.onclick = () => mfAllesGezien(code); }
   { const vb = $('bogverd'); vb.classList.toggle('verborgen', code !== 'bog_mog_zog'); vb.textContent = 'Verdeling: ' + (bogVerd() === 'm2' ? 'm²' : 'eenheden');
     vb.onclick = () => { try { localStorage.setItem('tt_bogverd', bogVerd() === 'm2' ? 'vhe' : 'm2'); } catch(e){} renderKlanten(code); }; }
   const laatste = {}; for (const d of DATASETS) if (d.tool_code === code && !laatste[d.klant_code]) laatste[d.klant_code] = d;
@@ -844,7 +904,7 @@ function renderKlanten(code){
       <span class="ts-voet">${d ? `<span class="ts-pil" title="${esc(info)}">${esc(new Date(d.op).toLocaleDateString('nl-NL', {day: 'numeric', month: 'short'}))}</span>` : ''}${(ADM || magUploaden(tool)) && d ? `<span class="tegelactie" data-dataklant="${esc(k.code)}" title="tool openen in Data &amp; import om nieuwe data in te lezen en te publiceren">⇪ data</span>` : ''}<span class="ts-open">Openen →</span></span></button>`; }).join('')
     + (ADM || magUploaden(tool) ? '<button class="tegel nieuw" id="nieuweklant">+ Nieuwe klant</button>' : '')
     + (!lijst.length && !ADM && !magUploaden(tool) ? '<p class="klein">Nog geen klanten met data voor deze tool.</p>' : '');
-  $('klanten').querySelectorAll('[data-klant]').forEach(b => b.onclick = e => openTool(tool, b.dataset.klant, e.target.closest('[data-dataklant]') ? 'data' : e.target.closest('[data-mfnote]') ? 'mfnote' : null));
+  $('klanten').querySelectorAll('[data-klant]').forEach(b => b.onclick = e => { if (e.target.closest('[data-mfnote]')){ mfPatchnote(tool, b.dataset.klant); return; } openTool(tool, b.dataset.klant, e.target.closest('[data-dataklant]') ? 'data' : null); });
   /* BOG-tegel: past "· 1.293 eenheden" niet op één regel, dan "eenh." */
   $('klanten').querySelectorAll('.bogt .bg-sub').forEach(el => { if (el.scrollWidth > el.clientWidth + 1){ const e = el.querySelector('.eh'); if (e) e.textContent = 'eenh.'; } });
   verversCtTegels(code);

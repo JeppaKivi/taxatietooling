@@ -344,7 +344,7 @@ th{font:800 9.5px var(--body);text-transform:uppercase;letter-spacing:.8px;color
 .tegel.kts .t{padding-top:6px}
 .tegel.kts .tegelactie{margin:0;align-self:center;color:var(--tlink);border-color:var(--tx)}
 .tegel.kts .v.online:empty{display:none}
-.tegel.kts .pnrij{display:flex;justify-content:flex-end;align-items:center;gap:10px}
+.tegel.kts .pnrij{display:flex;justify-content:flex-end;align-items:center;gap:8px}
 .tegel.kts .pnrij .ts-open{margin-left:0;white-space:nowrap}
 /* Controletool wonen: twee weergaven van de klanttegel (knop Weergave naast de kop). F = bollengrafiek bovenaan, G = afwijking onder de balk */
 #klanten.ctv-F .tegel.kts[data-klant], #klanten.ctv-G .tegel.kts[data-klant]{display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:8px;row-gap:8px;align-content:start}
@@ -957,7 +957,7 @@ function renderKlanten(code){
       <span class="t">${esc(k.naam)}</span>
       <span class="v online" id="online-${esc(k.code)}"></span>
       ${code === 'controle_marktwaarde' && d ? `<span class="pnrij">${MFH.length > 1 && !MFK[k.code] ? `<span class="tegelactie" data-mfnote="${esc(k.code)}" title="Kort overzicht: wat betekent de nieuwe modelmatige formule (${esc(mfKort(MFH[0]))}) voor deze klant">✦ Patchnote</span>` : ''}<span class="ts-open">Openen →</span></span>` : ''}
-      <span class="ts-voet">${d ? `<span class="ts-pil" title="${esc(info)}">${esc(new Date(d.op).toLocaleDateString('nl-NL', {day: 'numeric', month: 'short'}))}</span>` : ''}${(ADM || magUploaden(tool)) && d ? `<span class="tegelactie" data-dataklant="${esc(k.code)}" title="tool openen in Data &amp; import om nieuwe data in te lezen en te publiceren">⇪ data</span>` : ''}${code === 'controle_marktwaarde' && d ? '' : '<span class="ts-open">Openen →</span>'}</span></button>`; }).join('')
+      <span class="ts-voet">${d ? `<span class="ts-pil" title="${esc(info)}">${esc(new Date(d.op).toLocaleDateString('nl-NL', {day: 'numeric', month: 'short'}))}</span>` : ''}${(ADM || magUploaden(tool)) && d ? `<span class="tegelactie" data-dataklant="${esc(k.code)}" title="tool openen in Data &amp; import om nieuwe data in te lezen en te publiceren">${code === 'controle_marktwaarde' ? '⇪' : '⇪ data'}</span>` : ''}${code === 'controle_marktwaarde' && d ? '' : '<span class="ts-open">Openen →</span>'}</span></button>`; }).join('')
     + (ADM || magUploaden(tool) ? '<button class="tegel nieuw" id="nieuweklant">+ Nieuwe klant</button>' : '')
     + (!lijst.length && !ADM && !magUploaden(tool) ? '<p class="klein">Nog geen klanten met data voor deze tool.</p>' : '');
   $('klanten').querySelectorAll('[data-klant]').forEach(b => b.onclick = e => { if (e.target.closest('[data-mfnote]')){ mfPatchnote(tool, b.dataset.klant); return; } openTool(tool, b.dataset.klant, e.target.closest('[data-dataklant]') ? 'data' : null); });

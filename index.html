@@ -346,19 +346,31 @@ th{font:800 9.5px var(--body);text-transform:uppercase;letter-spacing:.8px;color
 .tegel.kts .v.online:empty{display:none}
 .tegel.kts .pnrij{display:flex;justify-content:flex-end;align-items:center;gap:8px}
 .tegel.kts .pnrij .ts-open{margin-left:0;white-space:nowrap}
-/* Controletool wonen: twee weergaven van de klanttegel (knop Weergave naast de kop). F = bollengrafiek bovenaan, G = afwijking onder de balk */
-#klanten.ctv-F .tegel.kts[data-klant], #klanten.ctv-G .tegel.kts[data-klant]{display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:8px;row-gap:8px;align-content:start}
+/* Controletool wonen: twee weergaven van de klanttegel (knop Weergave naast de kop), gelijk aan het ontwerp:
+   F = bollengrafiek over de volle breedte bovenaan, naam, balk, onderaan Patchnote en Openen · G = naam met Patchnote en Openen, balk, strook met de afwijking */
+.tegel.kts{--kb:#154473;--kbt:#FFFFFF;--kgb:transparent}
+:root[data-theme="dark"] .tegel.kts{--kb:#FFFFFF;--kbt:#154473;--kgb:#0E2E50}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) .tegel.kts{--kb:#FFFFFF;--kbt:#154473;--kgb:#0E2E50} }
+#klanten.ctv-F{grid-template-columns:repeat(auto-fill,minmax(320px,1fr))} #klanten.ctv-G{grid-template-columns:repeat(auto-fill,minmax(390px,1fr))}
+#klanten.ctv-F .tegel.kts[data-klant], #klanten.ctv-G .tegel.kts[data-klant]{display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:10px;row-gap:10px;align-content:start;padding:20px;overflow:hidden}
 #klanten.ctv-F .tegel.kts[data-klant] > *, #klanten.ctv-G .tegel.kts[data-klant] > *{grid-column:1 / -1;margin-top:0}
-.tegel.kts .kgraf{display:block;width:100%;border-radius:10px;background:var(--paper-dim);overflow:hidden;min-height:60px}
+#klanten.ctv-F .tegel.kts[data-klant] > .ts-kop, #klanten.ctv-G .tegel.kts[data-klant] > .ts-kop, #klanten.ctv-F .tegel.kts[data-klant] > .ts-voet, #klanten.ctv-G .tegel.kts[data-klant] > .ts-voet{display:none}
+.tegel.kts .kgraf{display:block;overflow:hidden;min-height:60px}
 .tegel.kts .kgraf svg{display:block;width:100%}
 .tegel.kts .kgraf:empty{display:none}
-#klanten.ctv-F .tegel.kts[data-klant] > .ts-kop{order:1} #klanten.ctv-F .tegel.kts[data-klant] > .kgraf{order:2} #klanten.ctv-F .tegel.kts[data-klant] > .t{order:3}
-#klanten.ctv-F .tegel.kts[data-klant] > .kr{order:4} #klanten.ctv-F .tegel.kts[data-klant] > .v{order:5}
-#klanten.ctv-F .tegel.kts[data-klant] > .ts-voet{order:7;grid-column:1;width:auto} #klanten.ctv-F .tegel.kts[data-klant] > .pnrij{order:8;grid-column:2}
-#klanten.ctv-G .tegel.kts[data-klant] > .ts-kop{order:1} #klanten.ctv-G .tegel.kts[data-klant] > .t{order:2}
-#klanten.ctv-G .tegel.kts[data-klant] > .kr{order:4} #klanten.ctv-G .tegel.kts[data-klant] > .kgraf{order:5} #klanten.ctv-G .tegel.kts[data-klant] > .v{order:6}
-#klanten.ctv-G .tegel.kts[data-klant] > .ts-voet{order:7;grid-column:1;width:auto} #klanten.ctv-G .tegel.kts[data-klant] > .pnrij{order:8;grid-column:2}
-.tegel.kts .ts-pil, .tegel.kts .tegelactie, .tegel.kts .ts-open{white-space:nowrap}
+.tegel.kts .pnrij{display:flex;align-items:center;gap:8px}
+.tegel.kts .pnrij .tegelactie, .tegel.kts .pnrij .ts-open{white-space:nowrap;margin:0}
+.tegel.kts .pnrij .ts-open{font:700 13px var(--body);color:var(--kbt);background:var(--kb);border:1px solid var(--kb);border-radius:8px;padding:7px 14px}
+#klanten.ctv-F .tegel.kts[data-klant] > .t, #klanten.ctv-G .tegel.kts[data-klant] > .t{font-size:20px;letter-spacing:-.3px;white-space:nowrap;padding-top:0}
+#klanten.ctv-F .tegel.kts[data-klant] > .kgraf{order:1;margin:-20px -20px 4px;background:var(--kgb)}
+#klanten.ctv-F .tegel.kts[data-klant] > .t{order:2} #klanten.ctv-F .tegel.kts[data-klant] > .kr{order:3} #klanten.ctv-F .tegel.kts[data-klant] > .v{order:4}
+#klanten.ctv-F .tegel.kts[data-klant] > .pnrij{order:5;justify-content:space-between;margin-top:2px}
+#klanten.ctv-F .tegel.kts[data-klant] > .pnrij .ts-open{margin-left:auto}
+#klanten.ctv-F .tegel.kts[data-klant] > .pnrij .tegelactie{border:0;padding:0;background:none;font:600 12px var(--body);color:var(--ink);text-decoration:underline;text-underline-offset:3px}
+#klanten.ctv-G .tegel.kts[data-klant] > .t{order:1;grid-column:1;align-self:center;font-size:21px}
+#klanten.ctv-G .tegel.kts[data-klant] > .pnrij{order:2;grid-column:2;justify-content:flex-end}
+#klanten.ctv-G .tegel.kts[data-klant] > .pnrij .tegelactie{font:600 13px var(--body);color:var(--kb);border:1px solid var(--kb);border-radius:8px;padding:7px 12px;background:none}
+#klanten.ctv-G .tegel.kts[data-klant] > .kr{order:3} #klanten.ctv-G .tegel.kts[data-klant] > .kgraf{order:4} #klanten.ctv-G .tegel.kts[data-klant] > .v{order:5}
 /* BOG MOG ZOG klanttegel (D2) */
 .tegel.kts.bogt{position:relative;overflow:hidden;gap:0;padding-bottom:0;--sk:#FFFFFF;--tk1:#0D2B45;--tk2:#1E5A6E;--tk3:#6BA7A0;--tk4:#C9B28C;--tk5:#8FB6D0}
 :root[data-theme="dark"] .tegel.kts.bogt{--sk:#0E2E50;--tk1:#5B87AE;--tk2:#3A8FA6;--tk3:#6BA7A0;--tk4:#DCC8AA;--tk5:#B7D4E6}
@@ -954,9 +966,9 @@ function renderKlanten(code){
       <span class="kr" data-kr="${esc(k.code)}">${klantRegel(d)}</span>
       ${kz && (kz.tb || kz.ak) ? `<span class="v">${kz.tb ? `<span class="stpil tb">${kz.tb} ter beoordeling</span>` : ''}${kz.ak ? `<span class="stpil ak">${kz.ak} akkoord</span>` : ''}</span>` : ''}
       ${code === 'controle_marktwaarde' && d ? `<span class="kgraf" data-kg="${esc(k.code)}"></span>` : ''}
-      <span class="t">${esc(k.naam)}</span>
+      <span class="t"${code === 'controle_marktwaarde' ? ` title="${esc(info)}"` : ''}>${esc(k.naam)}</span>
       <span class="v online" id="online-${esc(k.code)}"></span>
-      ${code === 'controle_marktwaarde' && d ? `<span class="pnrij">${MFH.length > 1 && !MFK[k.code] ? `<span class="tegelactie" data-mfnote="${esc(k.code)}" title="Kort overzicht: wat betekent de nieuwe modelmatige formule (${esc(mfKort(MFH[0]))}) voor deze klant">✦ Patchnote</span>` : ''}<span class="ts-open">Openen →</span></span>` : ''}
+      ${code === 'controle_marktwaarde' && d ? `<span class="pnrij">${MFH.length > 1 && !MFK[k.code] ? `<span class="tegelactie" data-mfnote="${esc(k.code)}" title="Kort overzicht: wat betekent de nieuwe modelmatige formule (${esc(mfKort(MFH[0]))}) voor deze klant">Patchnote</span>` : ''}<span class="ts-open">Openen</span></span>` : ''}
       <span class="ts-voet">${d ? `<span class="ts-pil" title="${esc(info)}">${esc(new Date(d.op).toLocaleDateString('nl-NL', {day: 'numeric', month: 'short'}))}</span>` : ''}${(ADM || magUploaden(tool)) && d ? `<span class="tegelactie" data-dataklant="${esc(k.code)}" title="tool openen in Data &amp; import om nieuwe data in te lezen en te publiceren">${code === 'controle_marktwaarde' ? '⇪' : '⇪ data'}</span>` : ''}${code === 'controle_marktwaarde' && d ? '' : '<span class="ts-open">Openen →</span>'}</span></button>`; }).join('')
     + (ADM || magUploaden(tool) ? '<button class="tegel nieuw" id="nieuweklant">+ Nieuwe klant</button>' : '')
     + (!lijst.length && !ADM && !magUploaden(tool) ? '<p class="klein">Nog geen klanten met data voor deze tool.</p>' : '');

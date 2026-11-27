@@ -351,26 +351,26 @@ th{font:800 9.5px var(--body);text-transform:uppercase;letter-spacing:.8px;color
 .tegel.kts{--kb:#154473;--kbt:#FFFFFF;--kgb:transparent}
 :root[data-theme="dark"] .tegel.kts{--kb:#FFFFFF;--kbt:#154473;--kgb:#0E2E50}
 @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) .tegel.kts{--kb:#FFFFFF;--kbt:#154473;--kgb:#0E2E50} }
-#klanten.ctv-F{grid-template-columns:repeat(auto-fill,minmax(320px,1fr))} #klanten.ctv-G{grid-template-columns:repeat(auto-fill,minmax(390px,1fr))}
-#klanten.ctv-F .tegel.kts[data-klant], #klanten.ctv-G .tegel.kts[data-klant]{display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:10px;row-gap:10px;align-content:start;padding:20px;overflow:hidden}
-#klanten.ctv-F .tegel.kts[data-klant] > *, #klanten.ctv-G .tegel.kts[data-klant] > *{grid-column:1 / -1;margin-top:0}
-#klanten.ctv-F .tegel.kts[data-klant] > .ts-kop, #klanten.ctv-G .tegel.kts[data-klant] > .ts-kop, #klanten.ctv-F .tegel.kts[data-klant] > .ts-voet, #klanten.ctv-G .tegel.kts[data-klant] > .ts-voet{display:none}
+#klanten.ctv-F{grid-template-columns:repeat(auto-fill,minmax(320px,1fr))} #klanten.ctv-G{grid-template-columns:repeat(auto-fill,minmax(370px,1fr))}
+#klanten.ctv-F .tegel.kts:is([data-klant],.vgl), #klanten.ctv-G .tegel.kts:is([data-klant],.vgl){display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:10px;row-gap:10px;align-content:start;padding:20px;overflow:hidden}
+#klanten.ctv-F .tegel.kts:is([data-klant],.vgl) > *, #klanten.ctv-G .tegel.kts:is([data-klant],.vgl) > *{grid-column:1 / -1;margin-top:0}
+#klanten.ctv-F .tegel.kts:is([data-klant],.vgl) > .ts-kop, #klanten.ctv-G .tegel.kts:is([data-klant],.vgl) > .ts-kop, #klanten.ctv-F .tegel.kts:is([data-klant],.vgl) > .ts-voet, #klanten.ctv-G .tegel.kts:is([data-klant],.vgl) > .ts-voet{display:none}
 .tegel.kts .kgraf{display:block;overflow:hidden;min-height:60px}
 .tegel.kts .kgraf svg{display:block;width:100%}
 .tegel.kts .kgraf:empty{display:none}
 .tegel.kts .pnrij{display:flex;align-items:center;gap:8px}
 .tegel.kts .pnrij .tegelactie, .tegel.kts .pnrij .ts-open{white-space:nowrap;margin:0}
 .tegel.kts .pnrij .ts-open{font:700 13px var(--body);color:var(--kbt);background:var(--kb);border:1px solid var(--kb);border-radius:8px;padding:7px 14px}
-#klanten.ctv-F .tegel.kts[data-klant] > .t, #klanten.ctv-G .tegel.kts[data-klant] > .t{font-size:20px;letter-spacing:-.3px;white-space:nowrap;padding-top:0}
-#klanten.ctv-F .tegel.kts[data-klant] > .kgraf{order:1;margin:-20px -20px 4px;background:var(--kgb)}
-#klanten.ctv-F .tegel.kts[data-klant] > .t{order:2} #klanten.ctv-F .tegel.kts[data-klant] > .kr{order:3} #klanten.ctv-F .tegel.kts[data-klant] > .v{order:4}
-#klanten.ctv-F .tegel.kts[data-klant] > .pnrij{order:5;justify-content:space-between;margin-top:2px}
-#klanten.ctv-F .tegel.kts[data-klant] > .pnrij .ts-open{margin-left:auto}
-#klanten.ctv-F .tegel.kts[data-klant] > .pnrij .tegelactie{border:0;padding:0;background:none;font:600 12px var(--body);color:var(--ink);text-decoration:underline;text-underline-offset:3px}
-#klanten.ctv-G .tegel.kts[data-klant] > .t{order:1;grid-column:1;align-self:center;font-size:21px}
-#klanten.ctv-G .tegel.kts[data-klant] > .pnrij{order:2;grid-column:2;justify-content:flex-end}
-#klanten.ctv-G .tegel.kts[data-klant] > .pnrij .tegelactie{font:600 13px var(--body);color:var(--kb);border:1px solid var(--kb);border-radius:8px;padding:7px 12px;background:none}
-#klanten.ctv-G .tegel.kts[data-klant] > .kr{order:3} #klanten.ctv-G .tegel.kts[data-klant] > .kgraf{order:4} #klanten.ctv-G .tegel.kts[data-klant] > .v{order:5}
+#klanten.ctv-F .tegel.kts:is([data-klant],.vgl) > .t, #klanten.ctv-G .tegel.kts:is([data-klant],.vgl) > .t{font-size:20px;letter-spacing:-.3px;white-space:nowrap;padding-top:0}
+#klanten.ctv-F .tegel.kts:is([data-klant],.vgl) > .kgraf{order:1;margin:-20px -20px 4px;background:var(--kgb)}
+#klanten.ctv-F .tegel.kts:is([data-klant],.vgl) > .t{order:2} #klanten.ctv-F .tegel.kts:is([data-klant],.vgl) > .kr{order:3} #klanten.ctv-F .tegel.kts:is([data-klant],.vgl) > .v{order:4}
+#klanten.ctv-F .tegel.kts:is([data-klant],.vgl) > .pnrij{order:5;justify-content:space-between;margin-top:2px}
+#klanten.ctv-F .tegel.kts:is([data-klant],.vgl) > .pnrij .ts-open{margin-left:auto}
+#klanten.ctv-F .tegel.kts:is([data-klant],.vgl) > .pnrij .tegelactie{border:0;padding:0;background:none;font:600 12px var(--body);color:var(--ink);text-decoration:underline;text-underline-offset:3px}
+#klanten.ctv-G .tegel.kts:is([data-klant],.vgl) > .t{order:1;grid-column:1;align-self:center;font-size:21px}
+#klanten.ctv-G .tegel.kts:is([data-klant],.vgl) > .pnrij{order:2;grid-column:2;justify-content:flex-end}
+#klanten.ctv-G .tegel.kts:is([data-klant],.vgl) > .pnrij .tegelactie{font:600 13px var(--body);color:var(--kb);border:1px solid var(--kb);border-radius:8px;padding:7px 12px;background:none}
+#klanten.ctv-G .tegel.kts:is([data-klant],.vgl) > .kr{order:3} #klanten.ctv-G .tegel.kts:is([data-klant],.vgl) > .kgraf{order:4} #klanten.ctv-G .tegel.kts:is([data-klant],.vgl) > .v{order:5}
 /* BOG MOG ZOG klanttegel (D2) */
 .tegel.kts.bogt{position:relative;overflow:hidden;gap:0;padding-bottom:0;--sk:#FFFFFF;--tk1:#0D2B45;--tk2:#1E5A6E;--tk3:#6BA7A0;--tk4:#C9B28C;--tk5:#8FB6D0}
 :root[data-theme="dark"] .tegel.kts.bogt{--sk:#0E2E50;--tk1:#5B87AE;--tk2:#3A8FA6;--tk3:#6BA7A0;--tk4:#DCC8AA;--tk5:#B7D4E6}
@@ -797,10 +797,10 @@ async function ctPunten(d, v){
 function ctGrafiek(el, D, soort){
   if (!el || !D || !D.punten.length){ if (el) el.innerHTML = ''; return; } const K = window.TTKERN, P = D.punten, c = (x, y, r, aan) => `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${r}" style="fill:var(--${aan ? 'bad' : 'ok'})"${aan ? ' stroke="#fff" stroke-width=".8"' : ' fill-opacity=".6"'}/>`;
   if (soort === 'G'){   /* afwijking KF THI / formule - 1 als stippen op een strook; donkere zone = marge, lichte zone = tot 'ver buiten de marge' */
-    const W = 360, B = 128, sch = 7.5, b = D.band * 100, ver = ((1 + D.band) * 1.025 - 1) * 100, bins = {};
+    const W = 360, B = 96, sch = 7.5, b = D.band * 100, ver = ((1 + D.band) * 1.025 - 1) * 100, bins = {};
     for (const p of P){ if (!(p.kft > 0)) continue; const a = Math.max(-22, Math.min(22, (p.kft / p.mf - 1) * 100)), k = Math.round(a / 1.1); (bins[k] = bins[k] || [0, 0])[p.aan ? 1 : 0]++; }
-    const hoogste = Math.max(1, ...Object.values(bins).map(x => x[0] + x[1])), stap = Math.min(5.2, 118 / hoogste); let s = '';
-    for (const k of Object.keys(bins)){ const [g, r] = bins[k]; for (let i = 0; i < g + r; i++) s += c(180 + k * 1.1 * sch, B - 3 - i * stap, 2.3, i >= g); }
+    const hoogste = Math.max(1, ...Object.values(bins).map(x => x[0] + x[1])), stap = Math.min(4.6, (B - 10) / hoogste); let s = '';
+    for (const k of Object.keys(bins)){ const [g, r] = bins[k]; for (let i = 0; i < g + r; i++) s += c(180 + k * 1.1 * sch, B - 3 - i * stap, 2.1, i >= g); }
     const tx = (x, t) => `<text x="${x}" y="${B + 15}" font-size="10" text-anchor="middle" style="fill:var(--ink-soft)">${t}</text>`;
     el.innerHTML = `<svg viewBox="0 0 ${W} ${B + 22}" role="img" aria-label="Afwijking van de factor ten opzichte van de formule, per complex"><rect x="${180 - ver * sch}" y="4" width="${2 * ver * sch}" height="${B - 4}" rx="6" style="fill:var(--ok)" fill-opacity=".10"/><rect x="${180 - b * sch}" y="4" width="${2 * b * sch}" height="${B - 4}" rx="6" style="fill:var(--ok)" fill-opacity=".16"/>
       <line x1="180" x2="180" y1="4" y2="${B}" style="stroke:var(--ok)"/><line x1="0" x2="${W}" y1="${B}" y2="${B}" style="stroke:var(--hair2)"/>${s}${tx(30, '−20%')}${tx(180 - b * sch, '−' + nl(b, 1) + '%')}${tx(180, 'formule')}${tx(180 + b * sch, '+' + nl(b, 1) + '%')}${tx(330, '+20%')}</svg>`;
@@ -865,7 +865,33 @@ async function verversCtTegels(code){
     el.innerHTML = klantRegel(d, {tel: t, oud, va, gz: MFH.find(v => v.versie === gz), vast: MFK[k] != null});
     try{ const kg = document.querySelector('#klanten [data-kg="' + k + '"]'); if (kg) ctGrafiek(kg, await ctPunten(d, va), ctWeergave()); }catch(e){ console.warn('tegelgrafiek', k, e); }
   }
+  try{ await ctVergelijkTegel(code); }catch(e){ console.warn('vergelijktegel', e); }
   lijnUit();
+}
+/* tegel Vergelijk portefeuilles bij de Controletool: alle klanten over elkaar, elke corporatie een eigen kleur (zelfde twee weergaven als de klanttegels) */
+const VGLKL = ['#5B9BD5', '#A77BD1', '#E0A04A', '#4FB3A5', '#D9739A', '#8FA3B8', '#C9B458', '#6E8FD8'];
+async function ctVergelijkTegel(code){
+  const el = document.querySelector('#klanten [data-kgv]'), kr = document.querySelector('#klanten [data-krv]'); if (!el || code !== 'controle_marktwaarde') return;
+  const S = []; for (const k of KLANTEN){ const d = DATASETS.find(x => x.tool_code === code && x.klant_code === k.code), va = mfVoor(k.code); if (!d || !va) continue; const D = await ctPunten(d, va); if (D && D.punten.length) S.push({naam: k.naam, D, kl: VGLKL[S.length % VGLKL.length]}); }
+  if (!S.length || !document.body.contains(el)) return; const tot = S.reduce((a, x) => a + x.D.punten.length, 0);
+  if (kr) kr.innerHTML = `<span class="balk" style="gap:2px;background:none">${S.map(x => `<i style="width:${(x.D.punten.length / tot * 100).toFixed(1)}%;background:${x.kl}" title="${esc(x.naam)}: ${nl(x.D.punten.length)} complexen"></i>`).join('')}</span><span class="tel"><span><b>${S.length}</b> corporatie${S.length === 1 ? '' : 's'}</span><span><b>${nl(tot)}</b> complexen</span></span>`;
+  if (ctWeergave() === 'G'){   /* per corporatie de verdeling van de afwijking als lijn */
+    const W = 360, B = 96, sch = 7.5, b = S[0].D.band * 100, ver = ((1 + S[0].D.band) * 1.025 - 1) * 100; let p = '';
+    for (const x of S){ const bins = {}; let n = 0; for (const q of x.D.punten){ if (!(q.kft > 0)) continue; const k = Math.round(Math.max(-22, Math.min(22, (q.kft / q.mf - 1) * 100)) / 2.2); bins[k] = (bins[k] || 0) + 1; n++; }
+      x.lijn = []; for (let k = -10; k <= 10; k++) x.lijn.push([180 + k * 2.2 * sch, (bins[k] || 0) / Math.max(1, n)]); }
+    const top = Math.max(.01, ...S.flatMap(x => x.lijn.map(q => q[1])));
+    for (const x of S) p += `<path d="${x.lijn.map((q, i) => (i ? 'L' : 'M') + q[0].toFixed(1) + ' ' + (B - 3 - q[1] / top * (B - 14)).toFixed(1)).join('')}" fill="none" stroke="${x.kl}" stroke-width="2.2" stroke-linejoin="round"><title>${esc(x.naam)}</title></path>`;
+    const tx = (x, t) => `<text x="${x}" y="${B + 15}" font-size="10" text-anchor="middle" style="fill:var(--ink-soft)">${t}</text>`;
+    el.innerHTML = `<svg viewBox="0 0 ${W} ${B + 22}" role="img" aria-label="Verdeling van de afwijking per corporatie"><rect x="${180 - ver * sch}" y="4" width="${2 * ver * sch}" height="${B - 4}" rx="6" style="fill:var(--ok)" fill-opacity=".10"/><rect x="${180 - b * sch}" y="4" width="${2 * b * sch}" height="${B - 4}" rx="6" style="fill:var(--ok)" fill-opacity=".16"/><line x1="180" x2="180" y1="4" y2="${B}" style="stroke:var(--ok)"/><line x1="0" x2="${W}" y1="${B}" y2="${B}" style="stroke:var(--hair2)"/>${p}${tx(30, '−20%')}${tx(180 - b * sch, '−' + nl(b, 1) + '%')}${tx(180, 'formule')}${tx(180 + b * sch, '+' + nl(b, 1) + '%')}${tx(330, '+20%')}</svg>`;
+    el.title = 'Per corporatie de verdeling van de afwijking tussen de factor van de taxatie en de modelmatige factor: ' + S.map(x => x.naam).join(', ') + '.'; return; }
+  /* alle complexen van alle corporaties in één bollengrafiek */
+  const Q = S.flatMap(x => x.D.punten.filter(q => q.h > 0 && q.kf > 0).map(q => Object.assign({kl: x.kl}, q))); if (!Q.length){ el.innerHTML = ''; return; }
+  const q = (arr, f) => { const t = arr.slice().sort((x, y) => x - y); return t[Math.max(0, Math.min(t.length - 1, Math.round(f * (t.length - 1))))]; };
+  let h0 = q(Q.map(p => p.h), .02), h1 = q(Q.map(p => p.h), .98), k0 = q(Q.map(p => p.kf), .02), k1 = q(Q.map(p => p.kf), .98); const dh = (h1 - h0) * .12 || .002, dk = (k1 - k0) * .14 || 1; h0 -= dh; h1 += dh; k0 -= dk; k1 += dk;
+  const W = 338, H = 190, X = h => 16 + (h - h0) / (h1 - h0) * (W - 32), Y = k => H - 16 - (k - k0) / (k1 - k0) * (H - 32); let s = '';
+  for (const p of Q.sort((a, b) => b.vhe - a.vhe)) s += `<circle cx="${X(Math.max(h0, Math.min(h1, p.h))).toFixed(1)}" cy="${Y(Math.max(k0, Math.min(k1, p.kf))).toFixed(1)}" r="${p.vhe < 40 ? 2.4 : p.vhe < 120 ? 3.6 : 5.2}" fill="${p.kl}" fill-opacity=".62"/>`;
+  el.innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Bollengrafiek van alle corporaties samen">${s}</svg>`;
+  el.title = 'Alle complexen van ' + S.map(x => x.naam).join(', ') + ' in één bollengrafiek: huur/leegwaarde tegen de factor, elke corporatie een eigen kleur.';
 }
 /* klanttegel: label linksboven (aantallen) en versie rechtsboven (toolversie waarmee het oordeel is berekend, anders de huidige) */
 function klantLabel(d){ if (!d) return 'nog geen data'; const m = d.meta || {}, t = m.tel || {}; const n = t.n != null ? t.n : m.complexen != null ? m.complexen : m.n, v = t.vhe != null ? t.vhe : m.vhe;
@@ -957,7 +983,8 @@ function renderKlanten(code){
   const laatste = {}; for (const d of DATASETS) if (d.tool_code === code && !laatste[d.klant_code]) laatste[d.klant_code] = d;
   const ADM = EFF().admin, lijst = KLANTEN.filter(k => laatste[k.code]);  // alleen klanten met data voor deze tool (ook voor de beheerder)
   const subs = TOOLS.filter(t => t.instellingen && t.instellingen.onder === code);   /* bv. Vergelijk portefeuilles: altijd de eerste tegel */
-  $('klanten').innerHTML = subs.map(t => tsTegel(t.code, t.naam, {compact: true, cls: ' vergelijk' + (magIn(t) ? '' : ' slot'), attr: ` data-sub="${esc(t.code)}"` + (magIn(t) ? '' : ' title="Niet voor deze gebruiker beschikbaar"'), ver: t.versie,
+  const vglTegel = t => `<button class="tegel ts kts vgl${magIn(t) ? '' : ' slot'}" data-sub="${esc(t.code)}"${magIn(t) ? '' : ' title="Niet voor deze gebruiker beschikbaar"'}><span class="kgraf" data-kgv="1"></span><span class="t" title="versie ${esc(t.versie || '')}">${esc(t.naam)}</span><span class="kr" data-krv="1"><span class="balk"></span><span class="tel"><span><b>${lijst.length}</b> corporatie${lijst.length === 1 ? '' : 's'}</span></span></span><span class="pnrij"><span class="ts-open">${magIn(t) ? 'Openen' : 'Niet beschikbaar'}</span></span></button>`;
+  $('klanten').innerHTML = subs.map(t => code === 'controle_marktwaarde' ? vglTegel(t) : tsTegel(t.code, t.naam, {compact: true, cls: ' vergelijk' + (magIn(t) ? '' : ' slot'), attr: ` data-sub="${esc(t.code)}"` + (magIn(t) ? '' : ' title="Niet voor deze gebruiker beschikbaar"'), ver: t.versie,
       badges: t.actief ? '' : '<span class="badge">uit · alleen jij</span>', pil: lijst.length + ' klant' + (lijst.length === 1 ? '' : 'en'), open: magIn(t) ? 'Openen →' : '🔒 niet beschikbaar'})).join('')
     + lijst.map(k => { const d = laatste[k.code], kz = (KEUZETEL[code] || {})[k.code];
     if (code === 'bog_mog_zog') return bogTegel(k, d, kz, tool, ADM);

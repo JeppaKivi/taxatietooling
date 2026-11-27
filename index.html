@@ -344,7 +344,20 @@ th{font:800 9.5px var(--body);text-transform:uppercase;letter-spacing:.8px;color
 .tegel.kts .t{padding-top:6px}
 .tegel.kts .tegelactie{margin:0;align-self:center;color:var(--tlink);border-color:var(--tx)}
 .tegel.kts .v.online:empty{display:none}
-.tegel.kts .pnrij{display:flex;justify-content:flex-end;width:100%;margin-top:2px}
+.tegel.kts .pnrij{display:flex;justify-content:flex-end;align-items:center;gap:10px}
+.tegel.kts .pnrij .ts-open{margin-left:0;white-space:nowrap}
+/* Controletool wonen: twee weergaven van de klanttegel (knop Weergave naast de kop). F = bollengrafiek bovenaan, G = afwijking onder de balk */
+#klanten.ctv-F .tegel.kts[data-klant], #klanten.ctv-G .tegel.kts[data-klant]{display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:8px;row-gap:8px;align-content:start}
+#klanten.ctv-F .tegel.kts[data-klant] > *, #klanten.ctv-G .tegel.kts[data-klant] > *{grid-column:1 / -1;margin-top:0}
+.tegel.kts .kgraf{display:block;width:100%;border-radius:10px;background:var(--paper-dim);overflow:hidden;min-height:60px}
+.tegel.kts .kgraf svg{display:block;width:100%}
+.tegel.kts .kgraf:empty{display:none}
+#klanten.ctv-F .tegel.kts[data-klant] > .ts-kop{order:1} #klanten.ctv-F .tegel.kts[data-klant] > .kgraf{order:2} #klanten.ctv-F .tegel.kts[data-klant] > .t{order:3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#klanten.ctv-F .tegel.kts[data-klant] > .kr{order:4} #klanten.ctv-F .tegel.kts[data-klant] > .v{order:5}
+#klanten.ctv-F .tegel.kts[data-klant] > .ts-voet{order:7;grid-column:1;width:auto} #klanten.ctv-F .tegel.kts[data-klant] > .pnrij{order:8;grid-column:2}
+#klanten.ctv-G .tegel.kts[data-klant] > .ts-kop{order:1} #klanten.ctv-G .tegel.kts[data-klant] > .t{order:2;grid-column:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;align-self:center}
+#klanten.ctv-G .tegel.kts[data-klant] > .pnrij{order:3;grid-column:2} #klanten.ctv-G .tegel.kts[data-klant] > .kr{order:4} #klanten.ctv-G .tegel.kts[data-klant] > .kgraf{order:5}
+#klanten.ctv-G .tegel.kts[data-klant] > .v{order:6} #klanten.ctv-G .tegel.kts[data-klant] > .ts-voet{order:8}
 /* BOG MOG ZOG klanttegel (D2) */
 .tegel.kts.bogt{position:relative;overflow:hidden;gap:0;padding-bottom:0;--sk:#FFFFFF;--tk1:#0D2B45;--tk2:#1E5A6E;--tk3:#6BA7A0;--tk4:#C9B28C;--tk5:#8FB6D0}
 :root[data-theme="dark"] .tegel.kts.bogt{--sk:#0E2E50;--tk1:#5B87AE;--tk2:#3A8FA6;--tk3:#6BA7A0;--tk4:#DCC8AA;--tk5:#B7D4E6}
@@ -441,7 +454,7 @@ th{font:800 9.5px var(--body);text-transform:uppercase;letter-spacing:.8px;color
     <i class="pgr l" data-pgr="l" title="sleep om de paginabreedte aan te passen"></i><i class="pgr r" data-pgr="r" title="sleep om de paginabreedte aan te passen"></i>
     <div class="blokken" id="blokken">
       <section class="blok" data-blok="tools"><div class="tegels" id="tools"></div></section>
-      <section class="blok verborgen" data-blok="klanten" id="klantblok"><header><h2 id="klantkop">Klanten</h2><button class="knop klein verborgen" id="mfbegrepen" title="Haalt de melding over de nieuwe modelmatige formule van alle klanttegels (alleen voor jou). De patchnote blijft op elke tegel staan.">Nieuwe modelmatige formule: ik begrijp het</button><button class="knop klein verborgen" id="bogverd" title="staafjes op de tegels: verdeling per vastgoedtype naar aantal eenheden of naar m² VVO"></button></header>
+      <section class="blok verborgen" data-blok="klanten" id="klantblok"><header><h2 id="klantkop">Klanten</h2><button class="knop klein verborgen" id="ctweergave" title="Wissel de grafiek op de klanttegels: bollengrafiek (huur/leegwaarde tegen factor) of afwijking ten opzichte van de formule. Je keuze wordt voor jou onthouden."></button><button class="knop klein verborgen" id="mfbegrepen" title="Haalt de melding over de nieuwe modelmatige formule van alle klanttegels (alleen voor jou). De patchnote blijft op elke tegel staan.">Nieuwe modelmatige formule: ik begrijp het</button><button class="knop klein verborgen" id="bogverd" title="staafjes op de tegels: verdeling per vastgoedtype naar aantal eenheden of naar m² VVO"></button></header>
         <div class="tegels" id="klanten"></div></section>
     </div>
     <section class="beheer verborgen" id="beheerblok"><header class="sectiekop" id="beheerkop" title="klik om in of uit te klappen"><h2><span class="bh-pijl">▾</span> Beheer</h2><span class="klein">alleen zichtbaar voor de beheerder</span></header>
@@ -706,10 +719,16 @@ function miniGrafiek(code){
 /* regel onder de klantnaam: bij een tool die tellingen meegeeft (controle marktwaarde) kort de nieuwste versie met goed / aandacht */
 /* ---------- leidende formule per klant (Controletool wonen) en tegeltellingen zonder de tool te openen ----------
    MFH = alle ooit doorgevoerde formules (nieuwste eerst); MFK[klant] = vastgezette versie (tool_instellingen.cfg.mfVersie), anders de nieuwste. */
-let MFH = [], MFK = {}, TICFG = {}, MFG = {};
+let MFH = [], MFK = {}, TICFG = {}, MFG = {}, VOORK = {};
+/* weergavekeuzes per gebruiker (tabel gebruiker_voorkeur); localStorage is alleen de snelle kopie voor deze browser */
+const voorkeur = (k, std) => { if (VOORK[k] != null) return VOORK[k]; try{ const v = localStorage.getItem('tt_vk_' + k); if (v != null) return JSON.parse(v); }catch(e){} return std; };
+async function zetVoorkeur(k, v){ VOORK[k] = v; try{ localStorage.setItem('tt_vk_' + k, JSON.stringify(v)); }catch(e){}
+  try{ const {error} = await sb.from('gebruiker_voorkeur').upsert({sleutel: k, waarde: v, op: new Date().toISOString()}, {onConflict: 'user_id,sleutel'}); if (error) console.warn('voorkeur', error.message); }catch(e){ console.warn('voorkeur', e); } }
+const ctWeergave = () => voorkeur('ct_tegel', 'F') === 'G' ? 'G' : 'F';
 async function laadMf(){
-  try{ const [h, ti, gz] = await Promise.all([sb.rpc('mf_historie'), sb.from('tool_instellingen').select('klant_code, cfg').eq('tool_code', 'controle_marktwaarde'), sb.from('mf_gezien').select('klant_code, versie')]);
+  try{ const [h, ti, gz, vkr] = await Promise.all([sb.rpc('mf_historie'), sb.from('tool_instellingen').select('klant_code, cfg').eq('tool_code', 'controle_marktwaarde'), sb.from('mf_gezien').select('klant_code, versie'), sb.from('gebruiker_voorkeur').select('sleutel, waarde')]);
     MFG = {}; for (const r of (gz && gz.data) || []) MFG[r.klant_code] = +r.versie;
+    for (const r of (vkr && vkr.data) || []){ VOORK[r.sleutel] = r.waarde; try{ localStorage.setItem('tt_vk_' + r.sleutel, JSON.stringify(r.waarde)); }catch(e){} }
     MFH = (Array.isArray(h.data) ? h.data : []).slice().sort((a, b) => b.versie - a.versie); TICFG = {}; MFK = {};
     for (const r of ti.data || []){ TICFG[r.klant_code] = r.cfg || {}; if (r.cfg && r.cfg.mfVersie != null && isFinite(+r.cfg.mfVersie)) MFK[r.klant_code] = +r.cfg.mfVersie; }
   }catch(e){ console.warn('formules laden', e); }
@@ -752,6 +771,36 @@ async function ctTel(d, v){
     TELC[sl] = t; try{ localStorage.setItem('tt_tel_' + sl, JSON.stringify(t)); }catch(e){} return t;
   }catch(e){ console.warn('tegeltelling', d.klant_code, e); return null; }
 }
+/* per complex de gegevens voor de grafiek op de klanttegel: huur/leegwaarde, factor, KF THI, modelmatige factor, woningen, aandacht (zelfde rekenwijze als de telling) */
+const PKP = {};
+async function ctPunten(d, v){
+  const K = window.TTKERN; if (!K || !v || !v.cfg || !window.DecompressionStream) return null; const sl = d.id + '|' + v.versie + '|' + K.KERN_VERSIE; if (PKP[sl]) return PKP[sl];
+  const P = await ctPakket(d), T = K.tcfgVan(TICFG[d.klant_code] && TICFG[d.klant_code].toetsCfg), cfg = K.vulAan(v.cfg), uit = [];
+  for (const c of P.rows){ const x = Object.assign({}, c); if (c.inp && typeof c.inp === 'object') x.inp = Object.assign({}, c.inp); if (c.rk) x.rk = Object.assign({}, c.rk); if (c.o2) x.o2 = Object.assign({}, c.o2); delete x._inp;
+    if (x.wws === undefined && P.wws.has(String(x.id))) x.wws = P.wws.get(String(x.id));
+    try{ K.herreken(x, cfg, T); }catch(e){} if (!(x.mf > 1)) continue; const a = K.isAandacht(x, T, false);
+    uit.push({h: (x.inp && x.inp.hlw) || x.hlw || null, kf: x.kf, kft: (x.o2 && x.o2.kfthi) || x.kf, mf: x.mf, vhe: +x.vhe || 0, aan: !!(a && a.aan)}); }
+  return PKP[sl] = {punten: uit, band: (T.kfBand > 0 ? T.kfBand : 7.5) / 100, cfg}; }
+function ctGrafiek(el, D, soort){
+  if (!el || !D || !D.punten.length){ if (el) el.innerHTML = ''; return; } const K = window.TTKERN, P = D.punten, c = (x, y, r, aan) => `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${r}" style="fill:var(--${aan ? 'bad' : 'ok'})"${aan ? ' stroke="#fff" stroke-width=".8"' : ' fill-opacity=".6"'}/>`;
+  if (soort === 'G'){   /* afwijking KF THI / formule - 1 als stippen op een strook; donkere zone = marge, lichte zone = tot 'ver buiten de marge' */
+    const W = 360, B = 128, sch = 7.5, b = D.band * 100, ver = ((1 + D.band) * 1.025 - 1) * 100, bins = {};
+    for (const p of P){ if (!(p.kft > 0)) continue; const a = Math.max(-22, Math.min(22, (p.kft / p.mf - 1) * 100)), k = Math.round(a / 1.1); (bins[k] = bins[k] || [0, 0])[p.aan ? 1 : 0]++; }
+    const hoogste = Math.max(1, ...Object.values(bins).map(x => x[0] + x[1])), stap = Math.min(5.2, 118 / hoogste); let s = '';
+    for (const k of Object.keys(bins)){ const [g, r] = bins[k]; for (let i = 0; i < g + r; i++) s += c(180 + k * 1.1 * sch, B - 3 - i * stap, 2.3, i >= g); }
+    const tx = (x, t) => `<text x="${x}" y="${B + 15}" font-size="10" text-anchor="middle" style="fill:var(--ink-soft)">${t}</text>`;
+    el.innerHTML = `<svg viewBox="0 0 ${W} ${B + 22}" role="img" aria-label="Afwijking van de factor ten opzichte van de formule, per complex"><rect x="${180 - ver * sch}" y="4" width="${2 * ver * sch}" height="${B - 4}" rx="6" style="fill:var(--ok)" fill-opacity=".10"/><rect x="${180 - b * sch}" y="4" width="${2 * b * sch}" height="${B - 4}" rx="6" style="fill:var(--ok)" fill-opacity=".16"/>
+      <line x1="180" x2="180" y1="4" y2="${B}" style="stroke:var(--ok)"/><line x1="0" x2="${W}" y1="${B}" y2="${B}" style="stroke:var(--hair2)"/>${s}${tx(30, '−20%')}${tx(180 - b * sch, '−' + nl(b, 1) + '%')}${tx(180, 'formule')}${tx(180 + b * sch, '+' + nl(b, 1) + '%')}${tx(330, '+20%')}</svg>`;
+    el.title = 'Elke stip is een complex: hoeveel de factor van de taxatie afwijkt van de modelmatige factor. Donkere zone = binnen de marge, lichte zone = buiten de marge maar nog geen aandacht. Rood binnen de zone = aandacht door de leegwaarderatio.'; return; }
+  /* bollengrafiek: huur/leegwaarde tegen factor, assen op het gebied waar 96% van de complexen ligt; uitschieters op de rand */
+  const Q = P.filter(p => p.h > 0 && p.kf > 0); if (!Q.length){ el.innerHTML = ''; return; }
+  const q = (arr, f) => { const t = arr.slice().sort((x, y) => x - y); return t[Math.max(0, Math.min(t.length - 1, Math.round(f * (t.length - 1))))]; };
+  let h0 = q(Q.map(p => p.h), .02), h1 = q(Q.map(p => p.h), .98), k0 = q(Q.map(p => p.kf), .02), k1 = q(Q.map(p => p.kf), .98); const dh = (h1 - h0) * .12 || .002, dk = (k1 - k0) * .14 || 1; h0 -= dh; h1 += dh; k0 -= dk; k1 += dk;
+  const W = 338, H = 190, X = h => 16 + (h - h0) / (h1 - h0) * (W - 32), Y = k => H - 16 - (k - k0) / (k1 - k0) * (H - 32); let lijn = '', s = '', rand = 0;
+  try{ for (let i = 0; i <= 40; i++){ const h = h0 + (h1 - h0) * i / 40, m = K.mfBereken({hlw: h, huurpotentie: 0, sted: 'SS', aantr: 'M', type: 'MGW', lab: 'C', bj: 1970, sector: 'S', leeg: 0, vhe: 40, aangebroken: false, fallbackLab: 0}, D.cfg); if (!m || !(m.mf >= k0 && m.mf <= k1)) continue; lijn += (lijn ? 'L' : 'M') + X(h).toFixed(1) + ' ' + Y(m.mf).toFixed(1); } }catch(e){}
+  for (const p of Q.slice().sort((a, b) => (a.aan - b.aan) || (b.vhe - a.vhe))){ if (p.h < h0 || p.h > h1 || p.kf < k0 || p.kf > k1) rand++; s += c(X(Math.max(h0, Math.min(h1, p.h))), Y(Math.max(k0, Math.min(k1, p.kf))), p.vhe < 40 ? 2.4 : p.vhe < 120 ? 3.6 : 5.2, p.aan); }
+  el.innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Bollengrafiek van de complexen: huur gedeeld door leegwaarde tegen de factor">${lijn ? `<path d="${lijn}" fill="none" style="stroke:var(--ink)" stroke-width="1.5" stroke-opacity=".8"/>` : ''}${s}</svg>`;
+  el.title = 'Elke bol is een complex: huur/leegwaarde (' + nl(h0 * 100, 1) + '% tot ' + nl(h1 * 100, 1) + '%) tegen de factor (' + nl(k0, 0) + ' tot ' + nl(k1, 0) + '), grootte naar aantal woningen. Rood = aandachtscomplex. Lijn = de formule voor een standaardprofiel (meergezins, label C, sociaal, sterk stedelijk, 1970).' + (rand ? ' ' + rand + ' uitschieters staan op de rand.' : ''); }
 /* patchnote op de klanttegel: wat betekent de formule die nu geldt voor deze klant, vergeleken met de vorige. Zelfde rekenwijze als de tegel
    (nieuwste versie in het pakket, marktwaarde excl. correcties). Bekijken haalt de melding niet weg. */
 async function mfPatchnote(tool, k){
@@ -801,6 +850,7 @@ async function verversCtTegels(code){
     if (!document.body.contains(el)) return;
     if (oud){ const kb = $('mfbegrepen'); if (kb) kb.classList.remove('verborgen'); }
     el.innerHTML = klantRegel(d, {tel: t, oud, va, gz: MFH.find(v => v.versie === gz), vast: MFK[k] != null});
+    try{ const kg = document.querySelector('#klanten [data-kg="' + k + '"]'); if (kg) ctGrafiek(kg, await ctPunten(d, va), ctWeergave()); }catch(e){ console.warn('tegelgrafiek', k, e); }
   }
   lijnUit();
 }
@@ -886,6 +936,9 @@ function renderKlanten(code){
   { const s = TS_STIJL[code] || TS_STIJL._; $('klanten').style.cssText = `--a-l:${s.al};--a-d:${s.ad};--s-l:${s.s};--lab-l:${s.ll};--lab-d:${s.ld};--c-l:${s.c}`; }
   $('klantblok').classList.remove('verborgen'); $('klantkop').textContent = tool.naam + ' · kies een klant';
   { const kb = $('mfbegrepen'); kb.classList.add('verborgen'); kb.onclick = () => mfAllesGezien(code); }
+  { const wb = $('ctweergave'), ct = code === 'controle_marktwaarde'; wb.classList.toggle('verborgen', !ct); wb.textContent = 'Weergave: ' + (ctWeergave() === 'G' ? 'afwijking' : 'bollengrafiek');
+    $('klanten').classList.toggle('ctv-F', ct && ctWeergave() === 'F'); $('klanten').classList.toggle('ctv-G', ct && ctWeergave() === 'G');
+    wb.onclick = () => { zetVoorkeur('ct_tegel', ctWeergave() === 'G' ? 'F' : 'G'); renderKlanten(code); }; }
   { const vb = $('bogverd'); vb.classList.toggle('verborgen', code !== 'bog_mog_zog'); vb.textContent = 'Verdeling: ' + (bogVerd() === 'm2' ? 'm²' : 'eenheden');
     vb.onclick = () => { try { localStorage.setItem('tt_bogverd', bogVerd() === 'm2' ? 'vhe' : 'm2'); } catch(e){} renderKlanten(code); }; }
   const laatste = {}; for (const d of DATASETS) if (d.tool_code === code && !laatste[d.klant_code]) laatste[d.klant_code] = d;
@@ -899,10 +952,11 @@ function renderKlanten(code){
     return `<button class="tegel ts kts" data-klant="${esc(k.code)}"><span class="ts-kop"><span class="ts-cat">${esc(klantLabel(d))}</span>${klantVersie(d, tool) ? `<span class="ts-ver">v${esc(klantVersie(d, tool))}</span>` : ''}</span>
       <span class="kr" data-kr="${esc(k.code)}">${klantRegel(d)}</span>
       ${kz && (kz.tb || kz.ak) ? `<span class="v">${kz.tb ? `<span class="stpil tb">${kz.tb} ter beoordeling</span>` : ''}${kz.ak ? `<span class="stpil ak">${kz.ak} akkoord</span>` : ''}</span>` : ''}
+      ${code === 'controle_marktwaarde' && d ? `<span class="kgraf" data-kg="${esc(k.code)}"></span>` : ''}
       <span class="t">${esc(k.naam)}</span>
       <span class="v online" id="online-${esc(k.code)}"></span>
-      ${code === 'controle_marktwaarde' && d && MFH.length > 1 && !MFK[k.code] ? `<span class="pnrij"><span class="tegelactie" data-mfnote="${esc(k.code)}" title="Kort overzicht: wat betekent de nieuwe modelmatige formule (${esc(mfKort(MFH[0]))}) voor deze klant">✦ Patchnote nieuwe formule</span></span>` : ''}
-      <span class="ts-voet">${d ? `<span class="ts-pil" title="${esc(info)}">${esc(new Date(d.op).toLocaleDateString('nl-NL', {day: 'numeric', month: 'short'}))}</span>` : ''}${(ADM || magUploaden(tool)) && d ? `<span class="tegelactie" data-dataklant="${esc(k.code)}" title="tool openen in Data &amp; import om nieuwe data in te lezen en te publiceren">⇪ data</span>` : ''}<span class="ts-open">Openen →</span></span></button>`; }).join('')
+      ${code === 'controle_marktwaarde' && d ? `<span class="pnrij">${MFH.length > 1 && !MFK[k.code] ? `<span class="tegelactie" data-mfnote="${esc(k.code)}" title="Kort overzicht: wat betekent de nieuwe modelmatige formule (${esc(mfKort(MFH[0]))}) voor deze klant">✦ Patchnote</span>` : ''}<span class="ts-open">Openen →</span></span>` : ''}
+      <span class="ts-voet">${d ? `<span class="ts-pil" title="${esc(info)}">${esc(new Date(d.op).toLocaleDateString('nl-NL', {day: 'numeric', month: 'short'}))}</span>` : ''}${(ADM || magUploaden(tool)) && d ? `<span class="tegelactie" data-dataklant="${esc(k.code)}" title="tool openen in Data &amp; import om nieuwe data in te lezen en te publiceren">⇪ data</span>` : ''}${code === 'controle_marktwaarde' && d ? '' : '<span class="ts-open">Openen →</span>'}</span></button>`; }).join('')
     + (ADM || magUploaden(tool) ? '<button class="tegel nieuw" id="nieuweklant">+ Nieuwe klant</button>' : '')
     + (!lijst.length && !ADM && !magUploaden(tool) ? '<p class="klein">Nog geen klanten met data voor deze tool.</p>' : '');
   $('klanten').querySelectorAll('[data-klant]').forEach(b => b.onclick = e => { if (e.target.closest('[data-mfnote]')){ mfPatchnote(tool, b.dataset.klant); return; } openTool(tool, b.dataset.klant, e.target.closest('[data-dataklant]') ? 'data' : null); });

@@ -368,7 +368,8 @@ th{font:800 9.5px var(--body);text-transform:uppercase;letter-spacing:.8px;color
 /* patchnote nieuwe formule: overzicht per klant, in het hoofdmenu zelf */
 #mfn{position:fixed;inset:0;z-index:900;display:flex;align-items:center;justify-content:center;background:rgba(10,18,28,.55);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px)}
 #mfn .mk{background:var(--card);color:var(--ink);border:1px solid var(--hairline);border-radius:16px;box-shadow:0 18px 60px rgba(0,0,0,.35);width:min(940px,94vw);max-height:90vh;display:flex;flex-direction:column;overflow:hidden}
-#mfn .kop{background:#154473;color:#fff;padding:18px 24px 16px}#mfn .kop small{display:block;font-size:11px;letter-spacing:.08em;text-transform:uppercase;opacity:.75;margin-bottom:5px}#mfn .kop h2{font:650 19px var(--display);margin:0 0 5px;line-height:1.25;color:#fff}#mfn .kop p{font-size:12px;opacity:.85;margin:0}
+#mfn .mfk{background:#154473;color:#fff;padding:18px 24px 16px}#mfn .mfk small{display:block;font-size:11px;letter-spacing:.08em;text-transform:uppercase;opacity:.75;margin-bottom:5px}#mfn .mfk h2{font:650 19px var(--display);margin:0 0 5px;line-height:1.25;color:#fff}#mfn .mfk p{font-size:12px;opacity:.85;margin:0}
+#mfn .mfk{display:block}#mfn .mfk h2,#mfn h3,#mfn th{text-transform:none;letter-spacing:0}#mfn h3{color:var(--ink)}
 #mfn .in{padding:18px 24px;overflow:auto}#mfn .kpi{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px}
 #mfn .kpi div{background:var(--paper-dim);border:1px solid var(--hairline);border-radius:10px;padding:10px 12px}#mfn .kpi span{display:block;font-size:10.5px;color:var(--ink-soft);margin-bottom:4px}#mfn .kpi b{font-size:19px;font-weight:650}#mfn .kpi i{font-style:normal;font-size:11px;color:var(--ink-soft);display:block;margin-top:2px}
 #mfn h3{font-size:12.5px;margin:0 0 6px}#mfn .uitleg{font-size:12px;line-height:1.6;background:var(--paper-dim);border-left:3px solid var(--acc);border-radius:0 8px 8px 0;padding:9px 12px;margin-bottom:16px}
@@ -758,7 +759,7 @@ async function mfPatchnote(tool, k){
   if (!K || !d || !nu) return; const vorig = MFH.filter(x => x.versie < nu.versie).sort((a, b) => b.versie - a.versie)[0]; if (!vorig) return;
   let m = $('mfn'); if (!m){ m = document.createElement('div'); m.id = 'mfn'; document.body.appendChild(m); }
   const sluit = () => m.remove(); m.onclick = ev => { if (ev.target === m) sluit(); };
-  m.innerHTML = '<div class="mk"><div class="kop"><small>Nieuwe modelmatige formule</small><h2>Wat betekent dit voor ' + esc(klant ? klant.naam : k) + '?</h2><p>bezig met rekenen…</p></div></div>';
+  m.innerHTML = '<div class="mk"><div class="mfk"><small>Nieuwe modelmatige formule</small><h2>Wat betekent dit voor ' + esc(klant ? klant.naam : k) + '?</h2><p>bezig met rekenen…</p></div></div>';
   try{
     const P = await ctPakket(d), tc = TICFG[k] && TICFG[k].toetsCfg, T = K.tcfgVan(tc), cN = K.vulAan(nu.cfg), cO = K.vulAan(vorig.cfg);
     const kop = c => { const x = Object.assign({}, c); if (c.inp && typeof c.inp === 'object') x.inp = Object.assign({}, c.inp); if (c.rk) x.rk = Object.assign({}, c.rk); if (c.o2) x.o2 = Object.assign({}, c.o2); delete x._inp;
@@ -777,7 +778,7 @@ async function mfPatchnote(tool, k){
     const tabel = L => !L.length ? '<div class="leeg">Geen complexen.</div>' : '<div class="lijst"><table><tr><th>complex</th><th class="r">VHE</th><th class="r">MF oud → nieuw</th><th class="r">KF</th></tr>'
       + L.map(x => '<tr><td><b>' + esc(x.id) + '</b>' + (x.naam ? ' ' + esc(x.naam) : '') + (x.pl || x.rd ? '<br><small>' + esc([x.pl, x.rd ? (x.was ? 'was buiten de marge op: ' : 'buiten de marge op: ') + x.rd : ''].filter(Boolean).join(' · ')) + '</small>' : '') + '</td><td class="r">' + nl(x.vhe) + '</td><td class="r">' + g1(x.mO) + ' → <b>' + g1(x.mN) + '</b></td><td class="r">' + g1(x.kf) + '</td></tr>').join('') + '</table></div>';
     if (!document.body.contains(m)) return;
-    m.innerHTML = '<div class="mk"><div class="kop"><small>Nieuwe modelmatige formule</small><h2>Wat betekent dit voor ' + esc(klant ? klant.naam : k) + '?</h2><p>' + esc(nu.naam || ('v' + nu.versie)) + (nu.op ? ' · sinds ' + dt(nu.op) : '') + ' · vervangt ' + esc(vorig.naam || ('v' + vorig.versie)) + '</p></div>'
+    m.innerHTML = '<div class="mk"><div class="mfk"><small>Nieuwe modelmatige formule</small><h2>Wat betekent dit voor ' + esc(klant ? klant.naam : k) + '?</h2><p>' + esc(nu.naam || ('v' + nu.versie)) + (nu.op ? ' · sinds ' + dt(nu.op) : '') + ' · vervangt ' + esc(vorig.naam || ('v' + vorig.versie)) + '</p></div>'
       + '<div class="in"><div class="kpi"><div><span>Aandachtscomplexen</span><b>' + R.aO + ' → ' + R.aN + '</b><i>van ' + (R.n - R.ntg) + ' getoetste complexen</i></div>'
       + '<div><span>Woningen in aandacht</span><b>' + nl(R.vO) + ' → ' + nl(R.vN) + '</b><i>VHE</i></div>'
       + '<div><span>Geen aandacht meer · nieuw</span><b>' + R.eraf.length + ' · ' + R.erbij.length + '</b><i>complexen</i></div>'
@@ -786,7 +787,7 @@ async function mfPatchnote(tool, k){
       + '<div class="twee"><div><h3>Geen aandachtscomplex meer (' + R.eraf.length + ')</h3>' + tabel(R.eraf) + '</div><div><h3>Nieuwe aandachtscomplexen (' + R.erbij.length + ')</h3>' + tabel(R.erbij) + '</div></div></div>'
       + '<div class="vt"><span>Berekend op de nieuwste versie van deze klant (' + esc(P.versie || '') + '), marktwaarde exclusief correcties.</span><span><button class="licht" id="mfn-open">Klant openen</button><button id="mfn-x">Sluiten</button></span></div></div>';
     $('mfn-x').onclick = sluit; $('mfn-open').onclick = () => { sluit(); openTool(tool, k); };
-  }catch(e){ console.warn('patchnote', e); m.innerHTML = '<div class="mk"><div class="kop"><small>Nieuwe modelmatige formule</small><h2>Het overzicht kon niet worden berekend</h2><p>' + esc((e && e.message) || e) + '</p></div><div class="vt"><span></span><button id="mfn-x">Sluiten</button></div></div>'; $('mfn-x').onclick = sluit; }
+  }catch(e){ console.warn('patchnote', e); m.innerHTML = '<div class="mk"><div class="mfk"><small>Nieuwe modelmatige formule</small><h2>Het overzicht kon niet worden berekend</h2><p>' + esc((e && e.message) || e) + '</p></div><div class="vt"><span></span><button id="mfn-x">Sluiten</button></div></div>'; $('mfn-x').onclick = sluit; }
 }
 /* klanttegels van de Controletool wonen live bijwerken; melding bij een nieuwe (of andere) formule tot deze gebruiker de klant opent */
 async function verversCtTegels(code){

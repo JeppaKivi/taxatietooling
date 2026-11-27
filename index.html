@@ -344,6 +344,7 @@ th{font:800 9.5px var(--body);text-transform:uppercase;letter-spacing:.8px;color
 .tegel.kts .t{padding-top:6px}
 .tegel.kts .tegelactie{margin:0;align-self:center;color:var(--tlink);border-color:var(--tx)}
 .tegel.kts .v.online:empty{display:none}
+.tegel.kts .pnrij{display:flex;justify-content:flex-end;width:100%;margin-top:2px}
 /* BOG MOG ZOG klanttegel (D2) */
 .tegel.kts.bogt{position:relative;overflow:hidden;gap:0;padding-bottom:0;--sk:#FFFFFF;--tk1:#0D2B45;--tk2:#1E5A6E;--tk3:#6BA7A0;--tk4:#C9B28C;--tk5:#8FB6D0}
 :root[data-theme="dark"] .tegel.kts.bogt{--sk:#0E2E50;--tk1:#5B87AE;--tk2:#3A8FA6;--tk3:#6BA7A0;--tk4:#DCC8AA;--tk5:#B7D4E6}
@@ -839,10 +840,11 @@ function renderKlanten(code){
       ${kz && (kz.tb || kz.ak) ? `<span class="v">${kz.tb ? `<span class="stpil tb">${kz.tb} ter beoordeling</span>` : ''}${kz.ak ? `<span class="stpil ak">${kz.ak} akkoord</span>` : ''}</span>` : ''}
       <span class="t">${esc(k.naam)}</span>
       <span class="v online" id="online-${esc(k.code)}"></span>
+      ${code === 'controle_marktwaarde' && d && MFH.length > 1 && !MFK[k.code] ? `<span class="pnrij"><span class="tegelactie" data-mfnote="${esc(k.code)}" title="Kort overzicht: wat betekent de nieuwe modelmatige formule (${esc(mfKort(MFH[0]))}) voor deze klant">✦ Patchnote nieuwe formule</span></span>` : ''}
       <span class="ts-voet">${d ? `<span class="ts-pil" title="${esc(info)}">${esc(new Date(d.op).toLocaleDateString('nl-NL', {day: 'numeric', month: 'short'}))}</span>` : ''}${(ADM || magUploaden(tool)) && d ? `<span class="tegelactie" data-dataklant="${esc(k.code)}" title="tool openen in Data &amp; import om nieuwe data in te lezen en te publiceren">⇪ data</span>` : ''}<span class="ts-open">Openen →</span></span></button>`; }).join('')
     + (ADM || magUploaden(tool) ? '<button class="tegel nieuw" id="nieuweklant">+ Nieuwe klant</button>' : '')
     + (!lijst.length && !ADM && !magUploaden(tool) ? '<p class="klein">Nog geen klanten met data voor deze tool.</p>' : '');
-  $('klanten').querySelectorAll('[data-klant]').forEach(b => b.onclick = e => openTool(tool, b.dataset.klant, e.target.closest('[data-dataklant]') ? 'data' : null));
+  $('klanten').querySelectorAll('[data-klant]').forEach(b => b.onclick = e => openTool(tool, b.dataset.klant, e.target.closest('[data-dataklant]') ? 'data' : e.target.closest('[data-mfnote]') ? 'mfnote' : null));
   /* BOG-tegel: past "· 1.293 eenheden" niet op één regel, dan "eenh." */
   $('klanten').querySelectorAll('.bogt .bg-sub').forEach(el => { if (el.scrollWidth > el.clientWidth + 1){ const e = el.querySelector('.eh'); if (e) e.textContent = 'eenh.'; } });
   verversCtTegels(code);
@@ -879,7 +881,7 @@ function renderKlanten(code){
 function lijnUit(){
   const box = $('klanten'); if (!box) return;
   const tg = [...box.querySelectorAll(':scope > .tegel[data-klant]')];
-  const delen = t => [...t.children].flatMap(c => c.classList.contains('kr') ? [...c.children] : [c]).filter(e => !e.classList.contains('v') && !e.classList.contains('tegelactie'));
+  const delen = t => [...t.children].flatMap(c => c.classList.contains('kr') ? [...c.children] : [c]).filter(e => !e.classList.contains('v') && !e.classList.contains('tegelactie') && !e.classList.contains('pnrij'));
   const per = tg.map(t => { const tel = {}; return delen(t).map(e => { e.style.minHeight = ''; const k = e.tagName + '.' + [...e.classList].sort().join('.'); tel[k] = (tel[k] || 0) + 1; return [k + '#' + tel[k], e]; }); });
   if (tg.length < 2) return;
   const max = {}; for (const l of per) for (const [k, e] of l) max[k] = Math.max(max[k] || 0, e.getBoundingClientRect().height);

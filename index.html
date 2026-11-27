@@ -956,14 +956,15 @@ function lijnUit(){
 
 /* ---------- handleidingen: per tool in tools.instellingen.handleidingen [{naam, pad, datum, bytes}], pdf in bucket apps ---------- */
 /* menulabel: één handleiding = "Handleiding"; meer = "Handleiding <naam zonder toolnaam>", bv. Handleiding kort / Handleiding uitgebreid */
-const hlLabel = (t, h, L) => { if (L.length < 2) return 'Handleiding'; const rest = String(h.naam || '').replace(new RegExp('^\\s*' + String(t.naam || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s*', 'i'), '').trim(); return 'Handleiding' + (rest ? ' ' + rest : ' ' + (h.naam || '')); };
+const isPn = h => /^\s*patchnote/i.test(String((h && h.naam) || ''));   /* patchnotes staan in hetzelfde menu, onder de handleidingen van de tool, met hun eigen naam */
+const hlLabel = (t, h, L) => { if (isPn(h)) return String(h.naam).trim(); if (L.filter(x => !isPn(x)).length < 2) return 'Handleiding'; const rest = String(h.naam || '').replace(new RegExp('^\\s*' + String(t.naam || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s*', 'i'), '').trim(); return 'Handleiding' + (rest ? ' ' + rest : ' ' + (h.naam || '')); };
 const hlLijst = t => (t.instellingen && Array.isArray(t.instellingen.handleidingen)) ? t.instellingen.handleidingen : [];
 async function openHandleiding(pad, w){
   const {data, error} = await sb.storage.from('apps').createSignedUrl(pad, 300);
   if (error || !data){ if (w) w.close(); return alert('Handleiding openen lukt niet: ' + (error ? error.message : 'onbekend')); }
   if (w) w.location = data.signedUrl; else location.href = data.signedUrl; }
 $('hlknop').addEventListener('click', e => { e.stopPropagation(); const m = $('hlmenu'), lijst = toolVolgorde().filter(t => hlLijst(t).length);
-  m.innerHTML = lijst.length ? lijst.map(t => `<div class="kopje">${esc(t.naam)}</div>` + hlLijst(t).map((h, i, L) => `<button data-hl="${esc(t.code)}|${i}">📄 ${esc(hlLabel(t, h, L))}</button>`).join('')).join('')
+  m.innerHTML = lijst.length ? lijst.map(t => `<div class="kopje">${esc(t.naam)}</div>` + hlLijst(t).map((h, i, L) => [isPn(h) ? 1 : 0, `<button data-hl="${esc(t.code)}|${i}">${isPn(h) ? '🗒' : '📄'} ${esc(hlLabel(t, h, L))}</button>`]).sort((x, y) => x[0] - y[0]).map(x => x[1]).join('')).join('')
     : '<div class="leeg">Nog geen handleidingen.</div>';
   m.querySelectorAll('[data-hl]').forEach(b => b.onclick = () => { const [c, i] = b.dataset.hl.split('|'), t = ALLETOOLS.find(x => x.code === c), h = t && hlLijst(t)[+i]; if (!h) return;
     const w = window.open('', '_blank'); if (w) w.document.write('<p style="font:14px sans-serif;padding:20px">Handleiding wordt geopend…</p>'); m.classList.remove('open'); openHandleiding(h.pad, w); });
